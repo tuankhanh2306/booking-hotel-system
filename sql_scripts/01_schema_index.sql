@@ -1,0 +1,2 @@
+-- Khởi tạo cấu trúc bảng vật lý và chỉ mục
+-- Thứ tự: LoaiPhong → Phong → KhachHang → DatPhong → HoaDon

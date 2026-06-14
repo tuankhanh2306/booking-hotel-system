@@ -1,0 +1,2 @@
+-- Trigger ngầm đồng bộ trạng thái vật lý
+-- trg_CapNhatTrangThaiPhong: AFTER UPDATE ON DatPhong
