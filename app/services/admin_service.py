@@ -144,6 +144,35 @@ def checkin(ma_dat_phong):
     finally:
         conn.close()
 
+def huy_dat_phong(ma_dat_phong):
+    conn = get_db_connection()
+    if conn is None:
+        # Chế độ Preview
+        target_booking = None
+        for b in MOCK_BOOKINGS:
+            if b["MaDatPhong"] == int(ma_dat_phong):
+                target_booking = b
+                break
+        if target_booking:
+            MOCK_BOOKINGS.remove(target_booking)
+        return True
+
+    try:
+        with conn.cursor() as cursor:
+            # Gọi Stored Procedure sp_HuyDatPhong
+            cursor.callproc('sp_HuyDatPhong', (ma_dat_phong,))
+            conn.commit()
+            return True
+    except pymysql.MySQLError as e:
+        conn.rollback()
+        errno = e.args[0] if e.args else 50000
+        if isinstance(errno, int) and errno < 0:
+            errno = 65536 + errno
+        msg = e.args[1] if len(e.args) > 1 else str(e)
+        raise HotelBookingException(errno, msg)
+    finally:
+        conn.close()
+
 def checkout(ma_dat_phong, tien_dich_vu):
     conn = get_db_connection()
     if conn is None:

@@ -46,6 +46,44 @@ def checkin():
         
     return redirect(url_for('admin.checkin'))
 
+@admin_bp.route('/admin/cancel-booking', methods=['POST'])
+def cancel_booking():
+    ma_dat_phong = request.form.get('ma_dat_phong')
+    try:
+        # Lấy thông tin tiền cọc trước khi hủy để đối chiếu hiển thị hoàn cọc
+        conn = get_db_connection()
+        tien_coc_truoc = 0
+        days_diff = 3 # mặc định hủy sớm nếu không kết nối được DB
+        
+        if conn is not None:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT TienCoc, NgayCheckIn, DATEDIFF(NgayCheckIn, CURDATE()) AS DaysDiff FROM DatPhong WHERE MaDatPhong = %s", (ma_dat_phong,))
+                    res = cursor.fetchone()
+                    if res:
+                        tien_coc_truoc = res['TienCoc'] or 0
+                        days_diff = res['DaysDiff'] if res['DaysDiff'] is not None else 3
+            except Exception:
+                pass
+            finally:
+                conn.close()
+
+        # Thực thi thủ tục hủy
+        admin_service.huy_dat_phong(ma_dat_phong)
+        
+        # Tạo thông báo thông minh dựa trên khoảng cách ngày hủy
+        if days_diff < 3:
+            flash(f"Hủy đơn #{ma_dat_phong} thành công! (Hủy muộn dưới 3 ngày: Phạt 100% cọc. Khách hàng mất {tien_coc_truoc:,.0f} VNĐ cọc, hoàn trả 0 VNĐ)", "warning")
+        else:
+            flash(f"Hủy đơn #{ma_dat_phong} thành công! (Hủy sớm >= 3 ngày: Hoàn cọc 100%. Đã xử lý hoàn trả {tien_coc_truoc:,.0f} VNĐ cho khách)", "success")
+            
+    except Exception as e:
+        errno = getattr(e, 'errno', None)
+        error_msg = get_error_message(errno, getattr(e, 'message', str(e))) if errno else str(e)
+        flash(f"Lỗi hủy đơn: {error_msg}", "error")
+        
+    return redirect(url_for('admin.checkin'))
+
 @admin_bp.route('/admin/checkout', methods=['GET', 'POST'])
 def checkout():
     if request.method == 'GET':

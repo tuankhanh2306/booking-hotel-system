@@ -72,10 +72,16 @@
               </span>
             </td>
             <td style="padding: 0.75rem; text-align: right;">
-              <form action="/admin/checkin" method="post" style="display: inline;">
-                <input type="hidden" name="ma_dat_phong" value="{{ booking.MaDatPhong }}">
-                <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.75rem;">🔑 Check-in</button>
-              </form>
+              <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <form action="/admin/checkin" method="post" style="display: inline;">
+                  <input type="hidden" name="ma_dat_phong" value="{{ booking.MaDatPhong }}">
+                  <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.75rem;">🔑 Check-in</button>
+                </form>
+                <form action="/admin/cancel-booking" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đặt phòng #{{ booking.MaDatPhong }} này?');">
+                  <input type="hidden" name="ma_dat_phong" value="{{ booking.MaDatPhong }}">
+                  <button type="submit" class="btn btn-outline btn-sm" style="color: #991B1B; border-color: #F87171; background: #FEE2E2; padding: 0.25rem 0.75rem; font-size: 0.8rem;">❌ Hủy đơn</button>
+                </form>
+              </div>
             </td>
           </tr>
           {% else %}
