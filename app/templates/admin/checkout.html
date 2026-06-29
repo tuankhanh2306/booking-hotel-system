@@ -1,1 +1,95 @@
-<!-- Giao diện Check-out (Admin) -->
+{% extends "base.html" %}
+
+{% block title %}Xử lý Check-out — VũngTàuStay Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0; max-width: 900px;">
+  
+  <div style="border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem;">
+    <h1 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--ink);">Quy trình Check-out & Thanh toán</h1>
+    <p style="color: var(--mist); margin-top: 0.25rem;">Thực hiện trả phòng, tính tiền phòng thực tế, thu chi phí dịch vụ và tạo hóa đơn</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- Form Check-out nhanh -->
+    <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow);">
+      <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Nhập thông tin trả phòng</h3>
+      
+      <form action="/admin/checkout" method="post">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="ma_dat_phong">Mã đặt phòng (MaDatPhong) *</label>
+          <input type="number" id="ma_dat_phong" name="ma_dat_phong" class="form-control" placeholder="Ví dụ: 1" value="{{ request.args.get('ma_dat_phong') or '' }}" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="tien_dich_vu">Chi phí dịch vụ phát sinh (VNĐ) *</label>
+          <input type="number" id="tien_dich_vu" name="tien_dich_vu" class="form-control" min="0" step="10000" value="0" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn--full" style="padding: 0.75rem; background: var(--ocean); border-color: var(--ocean);">Xác nhận Check-out & In hóa đơn</button>
+      </form>
+    </div>
+
+    <!-- Thông tin/Hướng dẫn -->
+    <div style="background: var(--sand); border-radius: var(--radius-lg); padding: 1.75rem;">
+      <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--ocean);">Quy trình nghiệp vụ Database</h3>
+      <p style="font-size: 0.92rem; line-height: 1.7; color: var(--ink); margin-bottom: 1rem;">
+        Khi thực thi Stored Procedure `sp_XuLyCheckOut`:
+      </p>
+      <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--ink);">
+        <li>Hệ thống gọi hàm Scalar `fn_TinhTienPhong` để tự động tính tiền phòng dựa trên số ngày ở thực tế: `DATEDIFF(NgayCheckOut, NgayCheckIn) * GiaTieuChuan`.</li>
+        <li>Tạo bản ghi mới trong bảng `HoaDon` liên kết 1-1 với `MaDatPhong`.</li>
+        <li>Cập nhật trạng thái đơn sang <strong>'Hoan_Thanh'</strong>.</li>
+        <li><strong>Trigger `trg_CapNhatTrangThaiPhong`</strong> tự động kích hoạt chuyển trạng thái phòng vật lý sang <strong>'Dang_Don_Dep'</strong>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Danh sách đơn đặt đang lưu trú -->
+  <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-top: 2.5rem;">
+    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Danh sách khách hàng đang lưu trú (Đã nhận phòng)</h3>
+    
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border); color: var(--mist); font-weight: 600;">
+            <th style="padding: 0.75rem;">Mã đặt</th>
+            <th style="padding: 0.75rem;">Khách hàng</th>
+            <th style="padding: 0.75rem;">Số phòng</th>
+            <th style="padding: 0.75rem;">Ngày nhận</th>
+            <th style="padding: 0.75rem;">Ngày trả dự kiến</th>
+            <th style="padding: 0.75rem;">Đơn giá phòng</th>
+            <th style="padding: 0.75rem;">Trạng thái đơn</th>
+            <th style="padding: 0.75rem; text-align: right;">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for booking in active_bookings %}
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 0.75rem; font-weight: bold; color: var(--ocean);">#{{ booking.MaDatPhong }}</td>
+            <td style="padding: 0.75rem;">{{ booking.HoTen }}</td>
+            <td style="padding: 0.75rem; font-weight: bold;">Phòng {{ booking.TenPhong }}</td>
+            <td style="padding: 0.75rem;">{{ booking.NgayCheckIn }}</td>
+            <td style="padding: 0.75rem;">{{ booking.NgayCheckOut }}</td>
+            <td style="padding: 0.75rem; color: var(--sunset); font-weight: 600;">{{ "{:,.0f}".format(booking.GiaTieuChuan) }} VNĐ/đêm</td>
+            <td style="padding: 0.75rem;">
+              <span class="room-badge room-badge--dang_o" style="position: static; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                Đang ở
+              </span>
+            </td>
+            <td style="padding: 0.75rem; text-align: right;">
+              <a href="/admin/checkout?ma_dat_phong={{ booking.MaDatPhong }}" class="btn btn-outline btn-sm" style="padding: 0.25rem 0.75rem; color: var(--ocean); border-color: var(--ocean);">💳 Chọn</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" style="padding: 2rem; text-align: center; color: var(--mist);">Không có phòng nào đang có khách lưu trú.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

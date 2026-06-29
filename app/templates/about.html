@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Giới thiệu — VũngTàuStay{% endblock %}
+
+{% block content %}
+<section class="hero" style="min-height: 40vh; display: flex; align-items: center;">
+  <div class="hero-overlay"></div>
+  <div class="container hero-content" style="text-align: center;">
+    <p class="hero-eyebrow">Về Chúng Tôi</p>
+    <h1 class="hero-title">Khám phá <em style="font-size: 1.3em;">VũngTàuStay</em></h1>
+  </div>
+</section>
+
+<div class="container" style="padding: 4rem 0;">
+  <div style="max-width: 800px; margin: 0 auto; line-height: 1.8; color: var(--ink);">
+    <h2 style="text-align: center; color: var(--ocean); margin-bottom: 2rem; font-family: var(--font-display);">Hành trình mang đến trải nghiệm nghỉ dưỡng hoàn hảo</h2>
+    
+    <p style="margin-bottom: 1.5rem; font-size: 1.1rem; text-indent: 20px;">
+      Chào mừng bạn đến với <strong>VũngTàuStay</strong>, hệ thống quản lý và đặt phòng khách sạn hàng đầu tại thành phố biển Vũng Tàu. Sứ mệnh của chúng tôi là mang lại sự tiện lợi, nhanh chóng và minh bạch nhất cho du khách trong việc tìm kiếm không gian lưu trú lý tưởng.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin: 3rem 0;">
+      <div style="background: var(--sand); padding: 2rem; border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--ocean); margin-bottom: 0.5rem;">Vị trí đắc địa</h3>
+        <p style="font-size: 0.95rem;">Hệ thống phòng nghỉ đa dạng với view hướng biển trọn vẹn, chỉ cách bãi tắm vài bước chân.</p>
+      </div>
+      <div style="background: var(--sand); padding: 2rem; border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--ocean); margin-bottom: 0.5rem;">Đặt phòng siêu tốc</h3>
+        <p style="font-size: 0.95rem;">Giao diện trực quan, xác nhận đặt phòng ngay lập tức chỉ với vài cú click chuột.</p>
+      </div>
+      <div style="background: var(--sand); padding: 2rem; border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--ocean); margin-bottom: 0.5rem;">Tiện nghi đẳng cấp</h3>
+        <p style="font-size: 0.95rem;">Trang bị đầy đủ tiện ích từ WiFi tốc độ cao, hồ bơi vô cực đến bữa sáng tự chọn đa dạng.</p>
+      </div>
+      <div style="background: var(--sand); padding: 2rem; border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--ocean); margin-bottom: 0.5rem;">Hỗ trợ 24/7</h3>
+        <p style="font-size: 0.95rem;">Đội ngũ nhân viên luôn sẵn sàng giải đáp thắc mắc và hỗ trợ bạn mọi lúc mọi nơi trong suốt kỳ nghỉ.</p>
+      </div>
+    </div>
+
+    <div style="border-top: 1px solid var(--border); padding-top: 2rem; text-align: center;">
+      <h3 style="margin-bottom: 1rem;">Thông tin liên hệ dự án</h3>
+      <p><strong>Dự án:</strong> Hệ Quản Trị Cơ Sở Dữ Liệu (Mô hình Thick-Database)</p>
+      <p><strong>Nhóm thực hiện:</strong> Nhóm 2 (Khanh, Đức, Đạt, Tuấn, Huy)</p>
+      <p><strong>Email hỗ trợ:</strong> support@vungtaustay.local</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

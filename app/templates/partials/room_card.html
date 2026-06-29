@@ -1,0 +1,55 @@
+<div class="room-card">
+  {% set status = (phong.TrangThai or phong.trang_thai or 'Trong') | lower %}
+  <div class="room-badge room-badge--{{ status }}">
+    {% if status == 'trong' %} Còn trống
+    {% elif status == 'dang_o' %} Đang có khách
+    {% elif status == 'dang_don_dep' %} Đang dọn dẹp
+    {% elif status == 'bao_tri' %} Bảo trì
+    {% else %}{{ status }}{% endif %}
+  </div>
+
+  <div class="room-img-wrap" style="height: 200px; overflow: hidden;">
+    {% set type_name = phong.TenLoai or phong.loai_phong or 'Standard' %}
+    {% set img_url = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80' %}
+    {% if type_name == 'VIP' %}
+      {% set img_url = 'https://images.unsplash.com/photo-1582719478250-c89402bb6539?auto=format&fit=crop&w=800&q=80' %}
+    {% elif type_name == 'Suite' %}
+      {% set img_url = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80' %}
+    {% elif type_name == 'Deluxe' %}
+      {% set img_url = 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80' %}
+    {% endif %}
+    
+    <img src="{{ img_url }}" alt="Phòng {{ type_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+  </div>
+
+  <div class="room-card-body">
+    <div class="room-meta">
+      <span class="room-type-tag">{{ type_name }}</span>
+      <span class="room-number">Phòng {{ phong.TenPhong or phong.so_phong }}</span>
+    </div>
+
+    <h3 class="room-name">{{ type_name }} - Tầng {{ phong.Tang or phong.tang or 1 }}</h3>
+
+    <div class="room-details">
+      <span>{{ phong.SucChuaToiDa or phong.suc_chua or 2 }} người</span>
+      {% if phong.co_wifi or phong.Wifi or (phong.co_wifi is not defined and phong.Wifi is not defined) %}<span>• WiFi</span>{% endif %}
+      {% if phong.co_bua_sang or phong.BuaSang %}<span>• Bữa sáng</span>{% endif %}
+      {% if phong.view_bien or phong.ViewBien %}<span>• View biển</span>{% endif %}
+    </div>
+
+    <div class="room-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+      <div class="room-price">
+        <span class="price-amount" style="color: var(--sunset); font-weight: bold; font-size: 1.2rem;">
+          {{ "{:,.0f}".format(phong.GiaTieuChuan or phong.gia_mot_dem or 0) }}
+        </span>
+        <span class="price-unit" style="font-size: 0.8rem;">VNĐ/đêm</span>
+      </div>
+
+      {% if status == 'trong' %}
+        <a href="/customer/booking?ma_phong={{ phong.MaPhong or phong.ma_phong }}" class="btn btn-primary btn-sm">Đặt ngay</a>
+      {% else %}
+        <button class="btn btn-outline btn-sm" disabled>Kín / Khóa</button>
+      {% endif %}
+    </div>
+  </div>
+</div>

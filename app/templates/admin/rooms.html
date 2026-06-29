@@ -1,1 +1,130 @@
-<!-- Giao diện quản lý phòng (Admin) -->
+{% extends "base.html" %}
+
+{% block title %}Quản lý phòng — VũngTàuStay Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+      <h1 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--ink);">Quản lý phòng Khách Sạn</h1>
+      <p style="color: var(--mist); margin-top: 0.25rem;">Lễ tân chủ động cập nhật trạng thái, Check-in, Check-out và Khóa/Mở phòng</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="/admin/checkin" class="btn btn-outline btn-sm">🔑 Check-in</a>
+      <a href="/admin/checkout" class="btn btn-outline btn-sm">💳 Check-out</a>
+    </div>
+  </div>
+
+  <!-- Form Thêm phòng mới -->
+  <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 2rem;">
+    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink); display: flex; align-items: center; gap: 0.5rem;">
+      ➕ Thêm phòng mới
+    </h3>
+    <form action="/admin/add-room" method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 1rem; align-items: end;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="ten_phong" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 0.35rem;">Tên/Số phòng</label>
+        <input type="text" id="ten_phong" name="ten_phong" class="form-control" placeholder="Ví dụ: 401" required style="padding: 0.5rem; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="tang" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 0.35rem;">Tầng</label>
+        <input type="number" id="tang" name="tang" class="form-control" placeholder="Ví dụ: 4" min="1" required style="padding: 0.5rem; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="ma_loai_phong" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 0.35rem;">Loại phòng</label>
+        <select id="ma_loai_phong" name="ma_loai_phong" class="form-control" required style="padding: 0.5rem; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); background: white;">
+          {% for lp in loai_phong_list %}
+            <option value="{{ lp.MaLoaiPhong }}">{{ lp.TenLoai }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.5rem; height: fit-content; font-size: 0.9rem;">Thêm ngay</button>
+    </form>
+  </div>
+
+  <!-- Bảng trạng thái & Thống kê phòng -->
+  <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 2rem;">
+    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Tất cả các phòng</h3>
+    
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border); color: var(--mist); font-weight: 600;">
+            <th style="padding: 1rem 0.75rem;">Số phòng</th>
+            <th style="padding: 1rem 0.75rem;">Tầng</th>
+            <th style="padding: 1rem 0.75rem;">Loại phòng</th>
+            <th style="padding: 1rem 0.75rem;">Sức chứa</th>
+            <th style="padding: 1rem 0.75rem;">Giá tiêu chuẩn</th>
+            <th style="padding: 1rem 0.75rem;">Trạng thái</th>
+            <th style="padding: 1rem 0.75rem; text-align: right;">Hành động nghiệp vụ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for phong in phong_list %}
+          <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;">
+            <td style="padding: 1rem 0.75rem; font-weight: 700; color: var(--ocean);">{{ phong.TenPhong }}</td>
+            <td style="padding: 1rem 0.75rem;">Tầng {{ phong.Tang }}</td>
+            <td style="padding: 1rem 0.75rem;">
+              <span class="room-type-tag" style="background: var(--sand); color: var(--ocean); font-weight: bold; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 99px;">
+                {{ phong.TenLoai }}
+              </span>
+            </td>
+            <td style="padding: 1rem 0.75rem;">{{ phong.SucChuaToiDa }} người</td>
+            <td style="padding: 1rem 0.75rem; font-weight: 600;">{{ "{:,.0f}".format(phong.GiaTieuChuan) }} VNĐ</td>
+            <td style="padding: 1rem 0.75rem;">
+              {% set status = phong.TrangThai | lower %}
+              <span class="room-badge room-badge--{{ status }}" style="position: static; display: inline-block;">
+                {% if status == 'trong' %} Còn trống
+                {% elif status == 'dang_o' %} Đang có khách
+                {% elif status == 'dang_don_dep' %} Đang dọn dẹp
+                {% elif status == 'bao_tri' %} Bảo trì
+                {% else %}{{ status }}{% endif %}
+              </span>
+              {% if status == 'dang_o' and phong.TenKhachHang %}
+                <div style="font-size: 0.8rem; color: #1e3a8a; margin-top: 0.4rem; line-height: 1.3; background: #eff6ff; padding: 0.4rem; border-radius: var(--radius-sm); border-left: 3px solid #3b82f6; text-align: left;">
+                  <strong>Khách:</strong> {{ phong.TenKhachHang }}<br>
+                  📅 {{ phong.NgayCheckIn }} - {{ phong.NgayCheckOut }}
+                </div>
+              {% endif %}
+            </td>
+            <td style="padding: 1rem 0.75rem; text-align: right;">
+                {% if status == 'dang_don_dep' %}
+                  <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
+                    <form action="/admin/toggle-room" method="post" style="display: inline-block;">
+                      <input type="hidden" name="ma_phong" value="{{ phong.MaPhong }}">
+                      <input type="hidden" name="trang_thai_moi" value="Trong">
+                      <button type="submit" class="btn btn-outline btn-sm" style="color: #065F46; border-color: #10B981; background: #D1FAE5; padding: 0.25rem 0.5rem; font-size: 0.8rem;">🧼 Dọn xong</button>
+                    </form>
+                    <form action="/admin/toggle-room" method="post" style="display: inline-block;">
+                      <input type="hidden" name="ma_phong" value="{{ phong.MaPhong }}">
+                      <input type="hidden" name="trang_thai_moi" value="Bao_Tri">
+                      <button type="submit" class="btn btn-outline btn-sm" style="color: #991B1B; border-color: #F87171; background: #FEE2E2; padding: 0.25rem 0.5rem; font-size: 0.8rem;">🔒 Bảo trì</button>
+                    </form>
+                  </div>
+                {% elif status == 'bao_tri' %}
+                  <form action="/admin/toggle-room" method="post" style="display: inline-block;">
+                    <input type="hidden" name="ma_phong" value="{{ phong.MaPhong }}">
+                    <input type="hidden" name="trang_thai_moi" value="Trong">
+                    <button type="submit" class="btn btn-outline btn-sm" style="color: #065F46; border-color: #10B981; background: #D1FAE5; padding: 0.25rem 0.5rem; font-size: 0.8rem;">🔧 Mở khóa</button>
+                  </form>
+                {% else %}
+                  <form action="/admin/toggle-room" method="post" style="display: inline-block;">
+                    <input type="hidden" name="ma_phong" value="{{ phong.MaPhong }}">
+                    <input type="hidden" name="trang_thai_moi" value="Bao_Tri">
+                    <button type="submit" class="btn btn-outline btn-sm" style="color: #991B1B; border-color: #F87171; background: #FEE2E2; padding: 0.25rem 0.5rem; font-size: 0.8rem;" {% if status == 'dang_o' %}disabled title="Phòng đang có khách không thể khóa!"{% endif %}>🔒 Khóa bảo trì</button>
+                  </form>
+                {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" style="padding: 2rem; text-align: center; color: var(--mist);">Không có phòng nào trong cơ sở dữ liệu.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

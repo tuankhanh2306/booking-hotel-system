@@ -1,1 +1,119 @@
-<!-- Giao diện tìm kiếm phòng trống -->
+{% extends "base.html" %}
+
+{% block title %}Tìm phòng trống — VũngTàuStay{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-overlay"></div>
+  <div class="container hero-content">
+    <p class="hero-eyebrow">Khách sạn tại Vũng Tàu</p>
+    <h1 class="hero-title">Nghỉ dưỡng <em>đẳng cấp</em><br>bên bờ biển xanh</h1>
+    <p class="hero-sub">Đặt phòng nhanh chóng · Xác nhận tức thì · Giá tốt nhất</p>
+
+    <div class="search-card">
+      <h2 class="search-title">Tìm phòng trống</h2>
+      <form class="search-form" action="/customer/search" method="get" id="hero-search-form">
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label for="ngay_nhan">Ngày nhận phòng</label>
+            <input type="date" id="ngay_nhan" name="ngay_nhan" class="form-control" value="{{ search.ngay_nhan or '' }}" min="{{ today }}" required />
+          </div>
+
+          <div class="form-group">
+            <label for="ngay_tra">Ngày trả phòng</label>
+            <input type="date" id="ngay_tra" name="ngay_tra" class="form-control" value="{{ search.ngay_tra or '' }}" min="{{ today }}" required />
+          </div>
+
+          <div class="form-group">
+            <label for="loai_phong">Loại phòng</label>
+            <select id="loai_phong" name="loai" class="form-control">
+              <option value="">Tất cả loại phòng</option>
+              {% for lp in loai_phong_list or [] %}
+                <option value="{{ lp.MaLoaiPhong or lp.ma_loai_phong }}" {% if search.loai == (lp.MaLoaiPhong or lp.ma_loai_phong) %}selected{% endif %}>
+                  {{ lp.TenLoai or lp.ten_loai }}
+                </option>
+              {% else %}
+                <option value="Standard" {% if search.loai == 'Standard' %}selected{% endif %}>Standard</option>
+                <option value="Deluxe" {% if search.loai == 'Deluxe' %}selected{% endif %}>Deluxe</option>
+                <option value="Suite" {% if search.loai == 'Suite' %}selected{% endif %}>Suite</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="so_nguoi">Số khách tối đa</label>
+            <select id="so_nguoi" name="so_nguoi" class="form-control">
+              <option value="1" {% if search.so_nguoi == '1' %}selected{% endif %}>1 người</option>
+              <option value="2" {% if search.so_nguoi == '2' or not search.so_nguoi %}selected{% endif %}>2 người</option>
+              <option value="3" {% if search.so_nguoi == '3' %}selected{% endif %}>3 người</option>
+              <option value="4" {% if search.so_nguoi == '4' %}selected{% endif %}>4+ người</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="form-group form-group--inline">
+            <label>Mức giá (VNĐ/đêm)</label>
+            <div class="price-range">
+              <input type="number" name="gia_min" class="form-control form-control--small" placeholder="Từ" min="0" step="100000" value="{{ search.gia_min or '' }}">
+              <span class="price-sep">—</span>
+              <input type="number" name="gia_max" class="form-control form-control--small" placeholder="Đến" min="0" step="100000" value="{{ search.gia_max or '' }}">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-search">Tìm phòng trống -></button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="stats-bar">
+  <div class="container stats-inner">
+    <div class="stat-item">
+      <span class="stat-num">{{ stats.tong_phong or 0 }}</span>
+      <span class="stat-label">Phòng sẵn có</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-num">{{ stats.loai_phong or 3 }}</span>
+      <span class="stat-label">Loại phòng</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-num">{{ stats.dat_phong_hom_nay or 0 }}</span>
+      <span class="stat-label">Đặt hôm nay</span>
+    </div>
+  </div>
+</section>
+
+<section class="section featured-rooms">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">
+        {% if search.ngay_nhan and search.ngay_tra %}
+          Kết quả tìm kiếm phòng trống
+        {% else %}
+          Phòng nổi bật
+        {% endif %}
+      </h2>
+      {% if search.ngay_nhan or search.ngay_tra %}
+        <a href="/customer/search" class="section-link">Thiết lập lại</a>
+      {% endif %}
+    </div>
+
+    <div class="room-grid">
+      {% for phong in phong_list %}
+        {% include "partials/room_card.html" %}
+      {% else %}
+        <div class="empty-state-box" style="grid-column: 1 / -1;">
+          <span class="empty-icon">🏖️</span>
+          <h3>Không tìm thấy phòng phù hợp</h3>
+          <p>Hãy thử thay đổi ngày nhận/trả phòng hoặc bộ lọc giá.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

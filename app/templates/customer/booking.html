@@ -1,1 +1,91 @@
-<!-- Giao diện đặt phòng -->
+{% extends "base.html" %}
+
+{% block title %}Đặt phòng — VũngTàuStay{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3rem 0; max-width: 800px;">
+  <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-lg);">
+    
+    <div style="border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--ocean);">Xác nhận đặt phòng</h1>
+        <p style="color: var(--mist); margin-top: 0.25rem;">Hệ thống đặt phòng tự động theo mô hình Thick-Database</p>
+      </div>
+      <a href="/customer/search" style="font-size: 0.9rem; font-weight: 600;">← Thay đổi phòng</a>
+    </div>
+
+    {% if room %}
+    <div style="background: #F0F5F8; border-radius: var(--radius); padding: 1.25rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <span class="room-type-tag" style="background: var(--sand); color: var(--ocean); font-weight: bold; font-size: 0.8rem; padding: 0.25rem 0.75rem; border-radius: 99px; text-transform: uppercase;">
+          {{ room.TenLoai or room.loai_phong }}
+        </span>
+        <h3 style="margin-top: 0.5rem; font-size: 1.2rem;">Phòng {{ room.TenPhong or room.so_phong }} — Tầng {{ room.Tang or room.tang or 1 }}</h3>
+        <p style="font-size: 0.9rem; color: var(--mist); margin-top: 0.25rem;">Sức chứa: {{ room.SucChuaToiDa or room.suc_chua or 2 }} người | WiFi miễn phí | Bữa sáng miễn phí</p>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 0.8rem; color: var(--mist); display: block;">Giá tiêu chuẩn</span>
+        <strong style="font-size: 1.4rem; color: var(--sunset);">{{ "{:,.0f}".format(room.GiaTieuChuan or room.gia_mot_dem or 0) }}</strong>
+        <span style="font-size: 0.8rem; color: var(--mist);">VNĐ/đêm</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <form action="/customer/booking" method="post">
+      <input type="hidden" name="ma_phong" value="{{ room.MaPhong or room.ma_phong or request.args.get('ma_phong') or '' }}">
+
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1rem; color: var(--ink); border-left: 4px solid var(--ocean); padding-left: 0.75rem;">
+          1. Thông tin khách hàng
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div class="form-group">
+            <label for="ho_ten">Họ và tên *</label>
+            <input type="text" id="ho_ten" name="ho_ten" class="form-control" placeholder="Nguyễn Văn A" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="cccd">Số CCCD *</label>
+            <input type="text" id="cccd" name="cccd" class="form-control" placeholder="079xxxxxxxx" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="dien_thoai">Số điện thoại *</label>
+            <input type="tel" id="dien_thoai" name="dien_thoai" class="form-control" placeholder="09xxxxxxxx" required>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1rem; color: var(--ink); border-left: 4px solid var(--ocean); padding-left: 0.75rem;">
+          2. Chi tiết lưu trú
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="form-group">
+            <label for="ngay_nhan">Ngày nhận phòng *</label>
+            <input type="date" id="ngay_nhan" name="ngay_nhan" class="form-control" value="{{ request.args.get('ngay_nhan') or '' }}" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="ngay_tra">Ngày trả phòng *</label>
+            <input type="date" id="ngay_tra" name="ngay_tra" class="form-control" value="{{ request.args.get('ngay_tra') or '' }}" required>
+          </div>
+
+          <div class="form-group">
+            <label for="tien_coc">Tiền đặt cọc (VNĐ) *</label>
+            <input type="number" id="tien_coc" name="tien_coc" class="form-control" min="0" step="50000" placeholder="Yêu cầu tối thiểu: 0 VNĐ" value="200000" required>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top: 1.5px solid var(--border); padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem; align-items: center;">
+        <span style="font-size: 0.9rem; color: var(--mist);">Bằng việc nhấn Đặt phòng, bạn đồng ý với chính sách của khách sạn.</span>
+        <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2.5rem; font-size: 1rem;">Đặt phòng ngay</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

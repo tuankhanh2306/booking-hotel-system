@@ -1,1 +1,92 @@
-<!-- Giao diện Check-in (Admin) -->
+{% extends "base.html" %}
+
+{% block title %}Xử lý Check-in — VũngTàuStay Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0; max-width: 900px;">
+  
+  <div style="border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem;">
+    <h1 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--ink);">Quy trình Check-in (Nhận phòng)</h1>
+    <p style="color: var(--mist); margin-top: 0.25rem;">Thực hiện nhận phòng dựa trên mã đơn đặt đã đặt cọc trước</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- Form Check-in nhanh -->
+    <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow);">
+      <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Nhập mã đơn đặt phòng</h3>
+      
+      <form action="/admin/checkin" method="post">
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="ma_dat_phong">Mã đặt phòng (MaDatPhong) *</label>
+          <input type="number" id="ma_dat_phong" name="ma_dat_phong" class="form-control" placeholder="Ví dụ: 1" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn--full" style="padding: 0.75rem;">Xác nhận Check-in</button>
+      </form>
+    </div>
+
+    <!-- Thông tin/Hướng dẫn -->
+    <div style="background: var(--sand); border-radius: var(--radius-lg); padding: 1.75rem;">
+      <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--ocean);">Quy tắc nghiệp vụ (Idempotency)</h3>
+      <p style="font-size: 0.92rem; line-height: 1.7; color: var(--ink); margin-bottom: 1rem;">
+        Hệ thống áp dụng chính sách Thick-Database kiểm soát chặt chẽ trạng thái đơn hàng:
+      </p>
+      <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--ink);">
+        <li>Đơn đặt phòng phải đang ở trạng thái <strong>'Cho_Duyet'</strong> hoặc <strong>'Da_Coc'</strong> mới có thể nhận phòng.</li>
+        <li>Hệ thống sẽ đồng thời chuyển trạng thái đơn đặt thành <strong>'Da_Nhan_Phong'</strong> và cập nhật trạng thái phòng thành <strong>'Dang_O'</strong>.</li>
+        <li>Giao dịch diễn ra trong cùng một Transaction cô lập để tránh tranh chấp tài nguyên dải chỉ mục.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Danh sách đơn đặt chờ nhận phòng -->
+  <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-top: 2.5rem;">
+    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Danh sách đơn đặt chờ nhận phòng</h3>
+    
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border); color: var(--mist); font-weight: 600;">
+            <th style="padding: 0.75rem;">Mã đặt</th>
+            <th style="padding: 0.75rem;">Khách hàng</th>
+            <th style="padding: 0.75rem;">Số phòng</th>
+            <th style="padding: 0.75rem;">Ngày nhận</th>
+            <th style="padding: 0.75rem;">Ngày trả</th>
+            <th style="padding: 0.75rem;">Tiền cọc</th>
+            <th style="padding: 0.75rem;">Trạng thái</th>
+            <th style="padding: 0.75rem; text-align: right;">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for booking in pending_bookings %}
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 0.75rem; font-weight: bold; color: var(--ocean);">#{{ booking.MaDatPhong }}</td>
+            <td style="padding: 0.75rem;">{{ booking.HoTen }}</td>
+            <td style="padding: 0.75rem; font-weight: bold;">Phòng {{ booking.TenPhong }}</td>
+            <td style="padding: 0.75rem;">{{ booking.NgayCheckIn }}</td>
+            <td style="padding: 0.75rem;">{{ booking.NgayCheckOut }}</td>
+            <td style="padding: 0.75rem; color: var(--sunset); font-weight: 600;">{{ "{:,.0f}".format(booking.TienCoc) }} VNĐ</td>
+            <td style="padding: 0.75rem;">
+              <span class="room-badge room-badge--trong" style="position: static; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                {{ booking.TrangThaiDon }}
+              </span>
+            </td>
+            <td style="padding: 0.75rem; text-align: right;">
+              <form action="/admin/checkin" method="post" style="display: inline;">
+                <input type="hidden" name="ma_dat_phong" value="{{ booking.MaDatPhong }}">
+                <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.75rem;">🔑 Check-in</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" style="padding: 2rem; text-align: center; color: var(--mist);">Không có đơn đặt phòng nào đang chờ nhận phòng.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
