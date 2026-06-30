@@ -196,9 +196,50 @@ def checkout(ma_dat_phong, tien_dich_vu):
         return True
 
     try:
+        import time
         with conn.cursor() as cursor:
-            # Gọi Stored Procedure sp_XuLyCheckOut
-            cursor.callproc('sp_XuLyCheckOut', (ma_dat_phong, tien_dich_vu))
+            # ═══ QUẢN LÝ TRANSACTION THỦ CÔNG (Không dùng COMMIT bên trong Procedure) ═══
+            # Để demo Dirty Read, cần Python kiểm soát thời điểm COMMIT
+            conn.autocommit(False)
+            
+            # Gọi các bước của sp_XuLyCheckOut thủ công (không dùng COMMIT bên trong)
+            # Bước 1: Lấy thông tin đơn đặt phòng
+            cursor.execute("""
+                SELECT dp.MaPhong, dp.TrangThaiDon, dp.NgayCheckIn, dp.NgayCheckOut, lp.GiaTieuChuan
+                FROM DatPhong dp
+                JOIN Phong p ON dp.MaPhong = p.MaPhong
+                JOIN LoaiPhong lp ON p.MaLoaiPhong = lp.MaLoaiPhong
+                WHERE dp.MaDatPhong = %s FOR UPDATE
+            """, (ma_dat_phong,))
+            row = cursor.fetchone()
+            
+            if row is None:
+                raise pymysql.MySQLError(51003, 'Don dat phong khong ton tai.')
+            if row['TrangThaiDon'] != 'Da_Nhan_Phong':
+                raise pymysql.MySQLError(52002, 'Don chua thuc hien Check-in.')
+            
+            # Bước 2: Tính tiền phòng bằng hàm scalar
+            cursor.execute("SELECT fn_TinhTienPhong(%s, %s, %s) AS TienPhong",
+                           (row['GiaTieuChuan'], row['NgayCheckIn'], row['NgayCheckOut']))
+            tien_phong = cursor.fetchone()['TienPhong']
+            
+            # Bước 3: Tạo hóa đơn (INSERT nhưng CHƯA COMMIT)
+            tong_tien = float(tien_phong) + float(tien_dich_vu)
+            cursor.execute(
+                "INSERT INTO HoaDon (MaDatPhong, TienPhong, TienDichVu, TongTien) VALUES (%s, %s, %s, %s)",
+                (ma_dat_phong, tien_phong, tien_dich_vu, tong_tien)
+            )
+            
+            # Bước 4: Cập nhật trạng thái đơn (trigger sẽ tự đổi phòng sang Dang_Don_Dep)
+            cursor.execute("UPDATE DatPhong SET TrangThaiDon = 'Hoan_Thanh' WHERE MaDatPhong = %s", (ma_dat_phong,))
+            
+            # ═══ GIẢ LẬP TRỄ 8 GIÂY (Chờ phản hồi cổng thanh toán ngân hàng) ═══
+            # Dữ liệu hóa đơn đã INSERT nhưng CHƯA COMMIT
+            # → Nhánh main (REPEATABLE READ): Dashboard không thấy tiền ảo → AN TOÀN
+            # → Nhánh demo-unsolved (READ UNCOMMITTED): Dashboard thấy tiền ảo → DIRTY READ
+            time.sleep(8)
+            
+            # COMMIT tất cả sau 8 giây
             conn.commit()
             return True
     except pymysql.MySQLError as e:

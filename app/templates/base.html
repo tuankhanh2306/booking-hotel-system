@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}VũngTàuStay — Hệ thống đặt phòng khách sạn{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_head %}{% endblock %}
 </head>
+
 <body>
 
   <header class="site-header">
@@ -21,8 +24,12 @@
 
       <nav class="nav-links">
         <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Trang chủ</a>
-        <a href="/customer/search" class="nav-link {% if request.path == '/customer/search' %}active{% endif %}">Tìm phòng</a>
-        <a href="/admin/rooms" class="nav-link {% if request.path == '/admin/rooms' %}active{% endif %}">Quản lý phòng</a>
+        <a href="/customer/search" class="nav-link {% if request.path == '/customer/search' %}active{% endif %}">Tìm
+          phòng</a>
+        <a href="/admin/rooms" class="nav-link {% if request.path == '/admin/rooms' %}active{% endif %}">Quản lý
+          phòng</a>
+        <a href="/admin/dashboard" class="nav-link {% if request.path == '/admin/dashboard' %}active{% endif %}">📊
+          Doanh thu</a>
         <a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">Giới thiệu</a>
       </nav>
 
@@ -66,6 +73,7 @@
         <div class="footer-col">
           <h4>Quản trị</h4>
           <a href="/admin/rooms">Quản lý phòng</a>
+          <a href="/admin/dashboard">Báo cáo doanh thu</a>
           <a href="/admin/checkin">Check-in</a>
           <a href="/admin/checkout">Check-out</a>
         </div>
@@ -79,4 +87,5 @@
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
+
 </html>
