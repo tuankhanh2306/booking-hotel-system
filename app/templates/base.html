@@ -23,9 +23,10 @@
         <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Trang chủ</a>
         <a href="/customer/search" class="nav-link {% if request.path == '/customer/search' %}active{% endif %}">Tìm phòng</a>
         <a href="/admin/rooms" class="nav-link {% if request.path == '/admin/rooms' %}active{% endif %}">Quản lý phòng</a>
+        <a href="/admin/dashboard" class="nav-link {% if request.path == '/admin/dashboard' %}active{% endif %}">📊 Doanh thu</a>
         <a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">Giới thiệu</a>
       </nav>
-
+      
       <div class="header-actions">
         <a href="/admin/rooms" class="btn btn-outline btn-sm">🔧 Admin</a>
       </div>
@@ -66,6 +67,7 @@
         <div class="footer-col">
           <h4>Quản trị</h4>
           <a href="/admin/rooms">Quản lý phòng</a>
+          <a href="/admin/dashboard">Báo cáo doanh thu</a>
           <a href="/admin/checkin">Check-in</a>
           <a href="/admin/checkout">Check-out</a>
         </div>

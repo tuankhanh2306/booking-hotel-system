@@ -11,6 +11,50 @@ def rooms():
     loai_phong_list = admin_service.get_all_room_types()
     return render_template('admin/rooms.html', phong_list=phong_list, loai_phong_list=loai_phong_list)
 
+@admin_bp.route('/admin/dashboard')
+def dashboard():
+    conn = get_db_connection()
+    invoices = []
+    stats = {
+        "tong_doanh_thu": 0.0,
+        "tien_phong": 0.0,
+        "tien_dich_vu": 0.0,
+        "so_luong": 0
+    }
+    
+    if conn is not None:
+        try:
+            with conn.cursor() as cursor:
+                # Đọc từ View báo cáo doanh thu
+                cursor.execute("SELECT * FROM vw_DoanhThuKhachSan ORDER BY NgayThanhToan DESC")
+                invoices = cursor.fetchall()
+                
+                # Tính toán tổng hợp số liệu
+                cursor.execute("SELECT SUM(TongTien) as Tong, SUM(TienPhong) as Phong, SUM(TienDichVu) as DV, COUNT(*) as SL FROM vw_DoanhThuKhachSan")
+                totals = cursor.fetchone()
+                if totals and totals['SL'] > 0:
+                    stats["tong_doanh_thu"] = float(totals['Tong'] or 0)
+                    stats["tien_phong"] = float(totals['Phong'] or 0)
+                    stats["tien_dich_vu"] = float(totals['DV'] or 0)
+                    stats["so_luong"] = int(totals['SL'] or 0)
+        except Exception as e:
+            print("Lỗi đọc báo cáo doanh thu:", e)
+        finally:
+            conn.close()
+    else:
+        # Mock data for preview mode
+        invoices = [
+            {"MaHoaDon": 1, "TenKhachHang": "Phạm Văn C", "TenPhong": "202", "HangPhong": "Deluxe", "NgayCheckIn": "2026-06-20", "NgayCheckOut": "2026-06-25", "SoDemLuuTru": 5, "TienPhong": 8000000.0, "TienDichVu": 1500000.0, "TongTien": 9500000.0, "NgayThanhToan": "2026-06-25 10:30:00"}
+        ]
+        stats = {
+            "tong_doanh_thu": 9500000.0,
+            "tien_phong": 8000000.0,
+            "tien_dich_vu": 1500000.0,
+            "so_luong": 1
+        }
+        
+    return render_template('admin/dashboard.html', invoices=invoices, stats=stats)
+
 @admin_bp.route('/admin/add-room', methods=['POST'])
 def add_room():
     ten_phong = request.form.get('ten_phong')

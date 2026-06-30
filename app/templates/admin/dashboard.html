@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Quản lý Doanh Thu — VũngTàuStay Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0;">
+  
+  <div style="border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--ink);">Báo cáo Doanh thu & Hóa đơn</h1>
+      <p style="color: var(--mist); margin-top: 0.25rem;">Thống kê tổng hợp trực tiếp từ cơ sở dữ liệu (View: vw_DoanhThuKhachSan)</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="/admin/checkout" class="btn btn-primary btn-sm">💳 Đi tới Check-out</a>
+      <button onclick="window.location.reload();" class="btn btn-outline btn-sm">🔄 Tải lại trang</button>
+    </div>
+  </div>
+
+  <!-- Thẻ chỉ số tổng quan (Metrics Cards) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+    
+    <!-- Tổng doanh thu -->
+    <div style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg); position: relative; overflow: hidden;">
+      <span style="font-size: 0.9rem; font-weight: 500; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em;">Tổng Doanh thu</span>
+      <h2 style="font-size: 2rem; font-family: var(--font-display); margin-top: 0.5rem; font-weight: 700;">
+        {{ "{:,.0f}".format(stats.tong_doanh_thu) }} <span style="font-size: 1rem;">VNĐ</span>
+      </h2>
+      <div style="position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.15; pointer-events: none; font-family: sans-serif;">💰</div>
+    </div>
+
+    <!-- Tiền phòng -->
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); position: relative; overflow: hidden;">
+      <span style="font-size: 0.9rem; font-weight: 600; color: var(--mist); text-transform: uppercase; letter-spacing: 0.05em;">Doanh thu phòng</span>
+      <h2 style="font-size: 2rem; font-family: var(--font-display); margin-top: 0.5rem; font-weight: 700; color: var(--ocean);">
+        {{ "{:,.0f}".format(stats.tien_phong) }} <span style="font-size: 1rem;">VNĐ</span>
+      </h2>
+      <div style="position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.05; pointer-events: none; font-family: sans-serif;">🏨</div>
+    </div>
+
+    <!-- Tiền dịch vụ -->
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); position: relative; overflow: hidden;">
+      <span style="font-size: 0.9rem; font-weight: 600; color: var(--mist); text-transform: uppercase; letter-spacing: 0.05em;">Doanh thu dịch vụ</span>
+      <h2 style="font-size: 2rem; font-family: var(--font-display); margin-top: 0.5rem; font-weight: 700; color: var(--sunset);">
+        {{ "{:,.0f}".format(stats.tien_dich_vu) }} <span style="font-size: 1rem;">VNĐ</span>
+      </h2>
+      <div style="position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.05; pointer-events: none; font-family: sans-serif;">🛎️</div>
+    </div>
+
+    <!-- Số lượng hóa đơn -->
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); position: relative; overflow: hidden;">
+      <span style="font-size: 0.9rem; font-weight: 600; color: var(--mist); text-transform: uppercase; letter-spacing: 0.05em;">Số lượng Hóa đơn</span>
+      <h2 style="font-size: 2rem; font-family: var(--font-display); margin-top: 0.5rem; font-weight: 700; color: var(--ink);">
+        {{ stats.so_luong }} <span style="font-size: 1rem; font-weight: normal; color: var(--mist);">đơn</span>
+      </h2>
+      <div style="position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.05; pointer-events: none; font-family: sans-serif;">📄</div>
+    </div>
+
+  </div>
+
+  <!-- Bảng chi tiết hóa đơn -->
+  <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 2rem;">
+    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Danh sách hóa đơn thanh toán</h3>
+    
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border); color: var(--mist); font-weight: 600;">
+            <th style="padding: 1rem 0.75rem;">Mã HD</th>
+            <th style="padding: 1rem 0.75rem;">Khách hàng</th>
+            <th style="padding: 1rem 0.75rem;">Phòng</th>
+            <th style="padding: 1rem 0.75rem;">Hạng</th>
+            <th style="padding: 1rem 0.75rem; text-align: center;">Số đêm</th>
+            <th style="padding: 1rem 0.75rem; text-align: right;">Tiền phòng</th>
+            <th style="padding: 1rem 0.75rem; text-align: right;">Tiền dịch vụ</th>
+            <th style="padding: 1rem 0.75rem; text-align: right;">Tổng thanh toán</th>
+            <th style="padding: 1rem 0.75rem; text-align: right;">Ngày thanh toán</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+          <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;">
+            <td style="padding: 1rem 0.75rem; font-weight: 700; color: var(--ocean);">#{{ inv.MaHoaDon }}</td>
+            <td style="padding: 1rem 0.75rem;">{{ inv.TenKhachHang }}</td>
+            <td style="padding: 1rem 0.75rem; font-weight: 600;">Phòng {{ inv.TenPhong }}</td>
+            <td style="padding: 1rem 0.75rem;">
+              <span class="room-type-tag" style="background: var(--sand); color: var(--ocean); font-weight: bold; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 99px;">
+                {{ inv.HangPhong }}
+              </span>
+            </td>
+            <td style="padding: 1rem 0.75rem; text-align: center;">{{ inv.SoDemLuuTru }} đêm</td>
+            <td style="padding: 1rem 0.75rem; text-align: right;">{{ "{:,.0f}".format(inv.TienPhong) }}</td>
+            <td style="padding: 1rem 0.75rem; text-align: right; color: var(--sunset); font-weight: 600;">{{ "{:,.0f}".format(inv.TienDichVu) }}</td>
+            <td style="padding: 1rem 0.75rem; text-align: right; font-weight: 700; color: #047857;">{{ "{:,.0f}".format(inv.TongTien) }} VNĐ</td>
+            <td style="padding: 1rem 0.75rem; text-align: right; color: var(--mist); font-size: 0.85rem;">{{ inv.NgayThanhToan }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" style="padding: 2rem; text-align: center; color: var(--mist);">Chưa có doanh thu hoặc hóa đơn nào được thanh toán.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Hướng dẫn demo Dirty Read cho Thầy -->
+  <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 2rem;">
+    <h4 style="color: #B45309; font-family: var(--font-display); font-size: 1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      💡 Hướng dẫn thầy kiểm tra lỗi Dirty Read (Đọc dữ liệu ảo)
+    </h4>
+    <p style="font-size: 0.9rem; line-height: 1.6; color: #78350F;">
+      1. Ở nhánh lỗi (<strong>demo-unsolved</strong>): Lễ tân tiến hành checkout phòng và nhập số tiền dịch vụ phát sinh lớn (ví dụ: 100,000,000đ) tại trang Check-out.<br>
+      2. Giao dịch check-out sẽ bị trễ cố ý 8 giây để chờ ngân hàng. <strong>Ngay lập tức</strong> trong 8 giây đó, tải lại trang Dashboard này.<br>
+      3. Thầy sẽ thấy doanh thu lập tức cộng thêm 100,000,000đ dù hóa đơn chưa commit. Sau 8 giây nếu giao dịch lỗi/rollback, số tiền này sẽ biến mất (Dirty Read).<br>
+      4. Ở nhánh an toàn (<strong>main</strong>), tải lại trang này trong 8 giây đó sẽ <strong>không thấy số tiền tăng lên</strong> cho tới khi lễ tân thực sự commit thành công.
+    </p>
+  </div>
+
+</div>
+{% endblock %}

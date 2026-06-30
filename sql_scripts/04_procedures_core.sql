@@ -87,8 +87,8 @@ BEGIN
     DECLARE v_ConflictCount INT;
     DECLARE v_KHExists INT;
 
-    -- Thiết lập mức cô lập tuần tự bảo mật tuyệt đối chống Lost Update / Phantom Read
-    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+    -- (Vô hiệu hóa TRANSACTION ISOLATION và FOR UPDATE để demo lỗi concurrency)
+    -- SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
     
     START TRANSACTION;
 
@@ -111,10 +111,10 @@ BEGIN
         SET MESSAGE_TEXT = 'Khach hang khong ton tai.', MYSQL_ERRNO = 51003;
     END IF;
 
-    -- 4. Kiểm tra sự tồn tại của Phòng và khóa dòng độc quyền phòng đó (Tránh SQL Mode only_full_group_by)
+    -- 4. Kiểm tra sự tồn tại của Phòng (Không khóa FOR UPDATE)
     SET v_RoomStatus = NULL;
     SELECT TrangThai INTO v_RoomStatus 
-    FROM Phong WHERE MaPhong = p_MaPhong FOR UPDATE;
+    FROM Phong WHERE MaPhong = p_MaPhong;
     
     IF v_RoomStatus IS NULL THEN
         SIGNAL SQLSTATE '45000'
@@ -127,22 +127,21 @@ BEGIN
         SET MESSAGE_TEXT = 'Phong dang trong trang thai bao tri.', MYSQL_ERRNO = 52003;
     END IF;
 
-    -- 6. Quét và khóa dòng độc quyền dải lịch sử đặt phòng chồng lấn (FOR UPDATE)
+    -- 6. Quét dải lịch sử đặt phòng chồng lấn (Không khóa FOR UPDATE)
     SELECT COUNT(*) INTO v_ConflictCount
     FROM DatPhong
     WHERE MaPhong = p_MaPhong
       AND NgayCheckIn < p_NgayCheckOut
       AND NgayCheckOut > p_NgayCheckIn
-      AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong')
-    FOR UPDATE;
+      AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong');
 
-    -- 7. Ném lỗi Overbooking nếu dải lịch bị giao cắt
-    IF v_ConflictCount > 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Phong khong con trong (Overbooking).', MYSQL_ERRNO = 52001;
-    END IF;
+    -- 7. Ném lỗi Overbooking (Vô hiệu hóa để demo lỗi đặt trùng phòng)
+    -- IF v_ConflictCount > 0 THEN
+    --     SIGNAL SQLSTATE '45000'
+    --     SET MESSAGE_TEXT = 'Phong khong con trong (Overbooking).', MYSQL_ERRNO = 52001;
+    -- END IF;
 
-    -- 8. Thêm mới bản ghi đặt phòng nếu thỏa mãn các điều kiện
+    -- 8. Thêm mới bản ghi đặt phòng
     INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon)
     VALUES (p_MaKH, p_MaPhong, p_NgayCheckIn, p_NgayCheckOut, p_TienCoc, 'Da_Coc');
 
@@ -216,12 +215,12 @@ BEGIN
 
     START TRANSACTION;
 
-    -- 1. Lấy thông tin đơn và khóa dòng độc quyền (Tương thích only_full_group_by)
+    -- 1. Lấy thông tin đơn (Không khóa FOR UPDATE)
     SET v_MaPhong = NULL;
     SET v_TrangThaiDon = NULL;
     
     SELECT MaPhong, TrangThaiDon INTO v_MaPhong, v_TrangThaiDon
-    FROM DatPhong WHERE MaDatPhong = p_MaDatPhong FOR UPDATE;
+    FROM DatPhong WHERE MaDatPhong = p_MaDatPhong;
 
     IF v_MaPhong IS NULL THEN
         SIGNAL SQLSTATE '45000'
@@ -234,13 +233,12 @@ BEGIN
         SET MESSAGE_TEXT = 'Trang thai don khong cho phep check-in.', MYSQL_ERRNO = 52002;
     END IF;
 
-    -- 3. Khóa dòng và kiểm tra trạng thái vật lý của phòng
-    SELECT TrangThai INTO v_TrangThaiPhong FROM Phong WHERE MaPhong = v_MaPhong FOR UPDATE;
-    
-    IF v_TrangThaiPhong <> 'Trong' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Phong dang khong san sang (ban hoac bao tri).', MYSQL_ERRNO = 52003;
-    END IF;
+    -- 3. Kiểm tra trạng thái vật lý của phòng (Vô hiệu hóa để demo lỗi check-in đè lên phòng đang có khách hoặc bảo trì)
+    -- SELECT TrangThai INTO v_TrangThaiPhong FROM Phong WHERE MaPhong = v_MaPhong;
+    -- IF v_TrangThaiPhong <> 'Trong' THEN
+    --     SIGNAL SQLSTATE '45000'
+    --     SET MESSAGE_TEXT = 'Phong dang khong san sang (ban hoac bao tri).', MYSQL_ERRNO = 52003;
+    -- END IF;
 
     -- 4. Cập nhật đồng thời đơn đặt và trạng thái phòng
     UPDATE DatPhong SET TrangThaiDon = 'Da_Nhan_Phong' WHERE MaDatPhong = p_MaDatPhong;
@@ -329,21 +327,21 @@ BEGIN
         SET MESSAGE_TEXT = 'Trang thai moi khong hop le.', MYSQL_ERRNO = 52002;
     END IF;
 
-    -- 2. Kiểm tra sự tồn tại của phòng và khóa dòng (Tương thích only_full_group_by)
+    -- 2. Kiểm tra sự tồn tại của phòng (Không khóa FOR UPDATE)
     SET v_TrangThaiHienTai = NULL;
     SELECT TrangThai INTO v_TrangThaiHienTai 
-    FROM Phong WHERE MaPhong = p_MaPhong FOR UPDATE;
+    FROM Phong WHERE MaPhong = p_MaPhong;
 
     IF v_TrangThaiHienTai IS NULL THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Phong khong ton tai.', MYSQL_ERRNO = 51003;
     END IF;
 
-    -- 3. Ngăn cản khóa bảo trì khi phòng đang có khách ở
-    IF v_TrangThaiHienTai = 'Dang_O' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Phong dang co khach luu tru, khong the khoa.', MYSQL_ERRNO = 52002;
-    END IF;
+    -- 3. Ngăn cản khóa bảo trì khi phòng đang có khách ở (Vô hiệu hóa để demo lỗi khóa phòng khi khách đang ở)
+    -- IF v_TrangThaiHienTai = 'Dang_O' THEN
+    --     SIGNAL SQLSTATE '45000'
+    --     SET MESSAGE_TEXT = 'Phong dang co khach luu tru, khong the khoa.', MYSQL_ERRNO = 52002;
+    -- END IF;
 
     -- 4. Thực hiện cập nhật
     UPDATE Phong SET TrangThai = p_TrangThaiMoi WHERE MaPhong = p_MaPhong;

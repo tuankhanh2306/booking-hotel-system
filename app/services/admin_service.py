@@ -196,9 +196,15 @@ def checkout(ma_dat_phong, tien_dich_vu):
         return True
 
     try:
+        import time
         with conn.cursor() as cursor:
             # Gọi Stored Procedure sp_XuLyCheckOut
             cursor.callproc('sp_XuLyCheckOut', (ma_dat_phong, tien_dich_vu))
+            
+            # GIẢ LẬP TRỄ GIAO DỊCH 8 GIÂY (Chờ phản hồi cổng thanh toán ngân hàng)
+            # Nhằm tạo dải thời gian đủ dài để Quản lý F5 trang Dashboard demo Dirty Read
+            time.sleep(8)
+            
             conn.commit()
             return True
     except pymysql.MySQLError as e:
