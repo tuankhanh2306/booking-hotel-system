@@ -14,7 +14,11 @@ def get_db_connection():
             cursorclass=DictCursor,
             connect_timeout=3
         )
+        # ❌ [DEMO-UNSOLVED] Ép READ UNCOMMITTED → cho phép đọc dữ liệu chưa COMMIT (Dirty Read)
+        with connection.cursor() as cursor:
+            cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
         return connection
     except Exception as e:
         # Trả về None nếu chưa cài đặt/khởi động Database, routes sẽ dùng mock data để hiển thị giao diện
         return None
+

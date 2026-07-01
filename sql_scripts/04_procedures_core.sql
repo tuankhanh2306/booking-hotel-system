@@ -87,8 +87,8 @@ BEGIN
     DECLARE v_ConflictCount INT;
     DECLARE v_KHExists INT;
 
-    -- Thiết lập mức cô lập tuần tự bảo mật tuyệt đối chống Lost Update / Phantom Read
-    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+    -- ❌ [DEMO-UNSOLVED] Không thiết lập SERIALIZABLE → không có khóa phạm vi chỉ mục
+    -- SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
     
     START TRANSACTION;
 
@@ -111,10 +111,10 @@ BEGIN
         SET MESSAGE_TEXT = 'Khach hang khong ton tai.', MYSQL_ERRNO = 51003;
     END IF;
 
-    -- 4. Kiểm tra sự tồn tại của Phòng và khóa dòng độc quyền phòng đó (Tránh SQL Mode only_full_group_by)
+    -- 4. Kiểm tra sự tồn tại của Phòng (❌ KHÔNG khóa FOR UPDATE)
     SET v_RoomStatus = NULL;
     SELECT TrangThai INTO v_RoomStatus 
-    FROM Phong WHERE MaPhong = p_MaPhong FOR UPDATE;
+    FROM Phong WHERE MaPhong = p_MaPhong;
     
     IF v_RoomStatus IS NULL THEN
         SIGNAL SQLSTATE '45000'
@@ -127,20 +127,19 @@ BEGIN
         SET MESSAGE_TEXT = 'Phong dang trong trang thai bao tri.', MYSQL_ERRNO = 52003;
     END IF;
 
-    -- 6. Quét và khóa dòng độc quyền dải lịch sử đặt phòng chồng lấn (FOR UPDATE)
+    -- 6. Quét dải lịch sử đặt phòng (❌ KHÔNG khóa FOR UPDATE)
     SELECT COUNT(*) INTO v_ConflictCount
     FROM DatPhong
     WHERE MaPhong = p_MaPhong
       AND NgayCheckIn < p_NgayCheckOut
       AND NgayCheckOut > p_NgayCheckIn
-      AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong')
-    FOR UPDATE;
+      AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong');
 
-    -- 7. Ném lỗi Overbooking nếu dải lịch bị giao cắt
-    IF v_ConflictCount > 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Phong khong con trong (Overbooking).', MYSQL_ERRNO = 52001;
-    END IF;
+    -- 7. ❌ [DEMO-UNSOLVED] Không chặn Overbooking → cả 2 khách đều INSERT thành công
+    -- IF v_ConflictCount > 0 THEN
+    --     SIGNAL SQLSTATE '45000'
+    --     SET MESSAGE_TEXT = 'Phong khong con trong (Overbooking).', MYSQL_ERRNO = 52001;
+    -- END IF;
 
     -- 8. Thêm mới bản ghi đặt phòng nếu thỏa mãn các điều kiện
     INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon)

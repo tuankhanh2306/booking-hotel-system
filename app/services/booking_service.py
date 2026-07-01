@@ -55,9 +55,30 @@ def tao_dat_phong(ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc):
         return True
 
     try:
+        import time
+        conn.autocommit(False)
         with conn.cursor() as cursor:
-            # Gọi Stored Procedure sp_TaoDatPhong
-            cursor.callproc('sp_TaoDatPhong', (ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc))
+            # 1. Quét lịch sử đặt phòng trùng lặp (❌ KHÔNG dùng FOR UPDATE hay SERIALIZABLE)
+            cursor.execute("""
+                SELECT COUNT(*) AS ConflictCount
+                FROM DatPhong
+                WHERE MaPhong = %s
+                  AND NgayCheckIn < %s
+                  AND NgayCheckOut > %s
+                  AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong')
+            """, (ma_phong, ngay_checkout, ngay_checkin))
+            conflict = cursor.fetchone()
+            
+            # ═══ GIẢ LẬP TRỄ 8 GIÂY ═══
+            # Giúp bạn thong thả chuyển trình duyệt và click đặt phòng
+            time.sleep(8)
+            
+            # 2. Thêm mới bản ghi đặt phòng
+            cursor.execute("""
+                INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon)
+                VALUES (%s, %s, %s, %s, %s, 'Da_Coc')
+            """, (ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc))
+            
             conn.commit()
             return True
     except pymysql.MySQLError as e:
@@ -70,3 +91,4 @@ def tao_dat_phong(ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc):
         raise HotelBookingException(errno, msg)
     finally:
         conn.close()
+
