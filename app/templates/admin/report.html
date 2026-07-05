@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo cáo đối chiếu số liệu ngày {{ ngay_baocao }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-family: 'Outfit', sans-serif;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --ink: #0f172a;
+      --mist: #64748b;
+      --border: #e2e8f0;
+      
+      --danger: #ef4444;
+      --danger-bg: #fef2f2;
+      --danger-border: #fca5a5;
+      
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --success-border: #6ee7b7;
+      
+      --amber: #d97706;
+      --amber-bg: #fffbeb;
+      --amber-border: #fcd34d;
+      
+      --ocean: #0ea5e9;
+      --radius: 8px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg);
+      color: var(--ink);
+      padding: 2rem;
+      line-height: 1.5;
+    }
+
+    .report-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+      position: relative;
+    }
+
+    .header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .header-meta {
+      font-size: 0.85rem;
+      color: var(--mist);
+      text-align: right;
+    }
+
+    /* Bảng thông tin đối chiếu chính */
+    .matching-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: center;
+      background: #fafafa;
+    }
+
+    .stat-card.amber {
+      background: #fffbeb;
+      border-color: #fcd34d;
+    }
+
+    .stat-card.blue {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+    }
+
+    .stat-card .label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--mist);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card .value {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-top: 0.5rem;
+      color: var(--ink);
+    }
+
+    /* Hộp cảnh báo lỗi Phantom Read */
+    .alert-box {
+      padding: 1.25rem;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .alert-box.danger {
+      background-color: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: #991b1b;
+    }
+
+    .alert-box.success {
+      background-color: var(--success-bg);
+      border-color: var(--success-border);
+      color: #065f46;
+    }
+
+    .alert-box .alert-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .alert-box .alert-desc {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    /* Bảng chi tiết đơn đặt phòng */
+    .details-section {
+      margin-top: 2rem;
+    }
+
+    .details-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      border-bottom: 2px solid var(--border);
+      text-align: left;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink);
+    }
+
+    tr:hover td {
+      background-color: #f8fafc;
+    }
+
+    .actions {
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background-color: var(--ink);
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #e2e8f0;
+      color: var(--ink);
+    }
+
+    /* Định dạng in ấn thực tế */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .report-container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .actions, .btn {
+        display: none !important;
+      }
+      .alert-box {
+        border: 2px solid #000 !important;
+        background: #fff !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="report-container">
+    <div class="header">
+      <div>
+        <h1>BÁO CÁO ĐỐI CHIẾU SỐ LIỆU</h1>
+        <p style="font-size: 0.9rem; color: var(--mist); margin-top: 0.25rem;">Thống kê đơn đặt phòng ngày: <strong>{{ ngay_baocao }}</strong></p>
+      </div>
+      <div class="header-meta">
+        <p>Hệ thống Khách Sạn Royal</p>
+        <p style="margin-top: 0.25rem;">Trạng thái bảo vệ: 
+          {% if use_protection %}
+            <span style="color: var(--success); font-weight: bold;">ĐANG BẬT (SERIALIZABLE)</span>
+          {% else %}
+            <span style="color: var(--danger); font-weight: bold;">TẮT (READ COMMITTED)</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <!-- Bảng so sánh 2 lần đọc -->
+    <div class="matching-box">
+      <div class="stat-card amber">
+        <div class="label">Lần đọc 1 (Đếm tổng số đơn)</div>
+        <div class="value">{{ count_val }}</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Lần đọc 2 (Danh sách chi tiết)</div>
+        <div class="value">{{ bookings|length }}</div>
+      </div>
+    </div>
+
+    <!-- Hộp cảnh báo tình trạng giao dịch -->
+    {% if has_phantom %}
+      <div class="alert-box danger">
+        <div class="alert-title">❌ PHÁT HIỆN LỖI ĐỌC ẢO (PHANTOM READ ANOMALY)</div>
+        <div class="alert-desc">
+          Số lượng tổng hợp đếm được ở lần đọc 1 (<strong>{{ count_val }} đơn</strong>) lệch với số lượng dòng thực tế hiển thị trong báo cáo chi tiết ở lần đọc 2 (<strong>{{ bookings|length }} khách hàng</strong>). 
+          Có một đơn đặt phòng mới đã được chèn vào CSDL và commit ngay giữa hai lần đọc của cùng một giao dịch thống kê.
+        </div>
+      </div>
+    {% else %}
+      <div class="alert-box success">
+        <div class="alert-title">✅ DỮ LIỆU ĐỒNG NHẤT (CONSISTENT DATA)</div>
+        <div class="alert-desc">
+          Số lượng đếm lần 1 (<strong>{{ count_val }}</strong>) trùng khớp hoàn toàn với số lượng chi tiết lần 2 (<strong>{{ bookings|length }}</strong>). 
+          {% if use_protection %}
+            Cơ chế bảo vệ <strong>SERIALIZABLE (Gap Lock)</strong> đã khóa dải dữ liệu thành công, bắt các giao dịch chèn mới của khách hàng phải chờ đợi cho đến khi báo cáo này hoàn tất.
+          {% else %}
+            Không có giao dịch chèn mới nào xen vào thời điểm thống kê này.
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Danh sách chi tiết -->
+    <div class="details-section">
+      <h3>Danh sách chi tiết các đơn đặt cọc</h3>
+      {% if bookings %}
+        <table>
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Khách hàng</th>
+              <th>Phòng</th>
+              <th>Ngày Check-in</th>
+              <th>Ngày Check-out</th>
+              <th>Tiền cọc</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bookings %}
+              <tr>
+                <td><strong>#{{ b.MaDatPhong }}</strong></td>
+                <td>{{ b.HoTen }}</td>
+                <td>Phòng {{ b.TenPhong }}</td>
+                <td>{{ b.NgayCheckIn }}</td>
+                <td>{{ b.NgayCheckOut }}</td>
+                <td>{{ "{:,.0f}".format(b.TienCoc) }} đ</td>
+                <td>
+                  <span style="background: #d1fae5; color: #065f46; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                    Đã cọc
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="color: var(--mist); text-align: center; padding: 2rem 0; border: 1px dashed var(--border); border-radius: var(--radius);">
+          Không có đơn đặt phòng nào được ghi nhận hoạt động trong ngày này.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Nút điều hướng hành động -->
+    <div class="actions">
+      <button onclick="window.close()" class="btn btn-secondary">Đóng trang</button>
+      <button onclick="window.print()" class="btn btn-primary">🖨️ Tiến hành in báo cáo</button>
+    </div>
+  </div>
+
+</body>
+</html>

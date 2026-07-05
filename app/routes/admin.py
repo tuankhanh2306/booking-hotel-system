@@ -19,6 +19,36 @@ def rooms():
         ngay_checkout=ngay_checkout
     )
 
+@admin_bp.route('/admin/report')
+def report():
+    ngay_baocao = request.args.get('ngay_baocao')
+    if not ngay_baocao:
+        flash("Vui lòng chọn ngày báo cáo.", "danger")
+        return redirect(url_for('admin.rooms'))
+    
+    # Trên nhánh demo-unsolved: use_protection=False để mô phỏng lỗi đọc ảo (Phantom Read)
+    use_protection = False
+    
+    try:
+        report_data = admin_service.get_phantom_report_data(ngay_baocao, use_protection=use_protection)
+        count_val = report_data["count"]
+        bookings = report_data["bookings"]
+        
+        # Phát hiện đọc ảo khi kết quả đếm (COUNT) lệch với danh sách thực tế (List)
+        has_phantom = count_val != len(bookings)
+        
+        return render_template(
+            'admin/report.html',
+            ngay_baocao=ngay_baocao,
+            count_val=count_val,
+            bookings=bookings,
+            has_phantom=has_phantom,
+            use_protection=use_protection
+        )
+    except Exception as e:
+        flash(f"Lỗi khi tải báo cáo: {e}", "danger")
+        return redirect(url_for('admin.rooms'))
+
 @admin_bp.route('/admin/dashboard')
 def dashboard():
     conn = get_db_connection()

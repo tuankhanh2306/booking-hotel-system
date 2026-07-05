@@ -54,7 +54,7 @@ BEGIN
         lp.SucChuaToiDa
     FROM Phong p
     JOIN LoaiPhong lp ON p.MaLoaiPhong = lp.MaLoaiPhong
-    WHERE p.TrangThai = 'Trong'
+    WHERE p.TrangThai != 'Bao_Tri'
       AND NOT EXISTS (
           SELECT 1 
           FROM DatPhong dp

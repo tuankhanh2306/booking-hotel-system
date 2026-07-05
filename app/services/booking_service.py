@@ -85,9 +85,9 @@ def tao_dat_phong(ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc):
             """, (ma_phong, ngay_checkout, ngay_checkin))
             conflict = cursor.fetchone()
             
-            # ═══ GIẢ LẬP TRỄ 8 GIÂY ═══
-            # Giúp bạn thong thả chuyển trình duyệt và click đặt phòng
-            time.sleep(8)
+            # ═══ GIẢ LẬP TRỄ 2 GIÂY ═══
+            # Giúp giao dịch đặt phòng hoàn tất nhanh hơn (chỉ chờ 2 giây)
+            time.sleep(2)
             
             # 2. Thêm mới bản ghi đặt phòng
             cursor.execute("""
