@@ -50,6 +50,73 @@ def get_all_rooms():
         if conn:
             conn.close()
 
+def get_all_rooms_by_date(ngay_checkin=None, ngay_checkout=None):
+    conn = get_db_connection()
+    if conn is None:
+        return MOCK_PHONG
+
+    if not ngay_checkin or not ngay_checkout:
+        return get_all_rooms()
+
+    try:
+        with conn.cursor() as cursor:
+            # Lấy toàn bộ phòng kèm đơn đặt phòng hoạt động trùng dải ngày (Overlap)
+            query = """
+                SELECT 
+                    p.MaPhong, 
+                    p.TenPhong, 
+                    p.Tang, 
+                    p.TrangThai AS TrangThaiVatLy, 
+                    lp.TenLoai, 
+                    lp.GiaTieuChuan, 
+                    lp.SucChuaToiDa,
+                    kh.HoTen AS TenKhachHang,
+                    dp.NgayCheckIn,
+                    dp.NgayCheckOut,
+                    dp.MaDatPhong,
+                    dp.TrangThaiDon
+                FROM Phong p
+                JOIN LoaiPhong lp ON p.MaLoaiPhong = lp.MaLoaiPhong
+                LEFT JOIN DatPhong dp ON p.MaPhong = dp.MaPhong 
+                    AND dp.TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong', 'Hoan_Thanh')
+                    AND dp.NgayCheckIn < %s 
+                    AND dp.NgayCheckOut > %s
+                LEFT JOIN KhachHang kh ON dp.MaKH = kh.MaKH
+                ORDER BY p.TenPhong
+            """
+            cursor.execute(query, (ngay_checkout, ngay_checkin))
+            results = cursor.fetchall()
+            
+            rooms = []
+            for r in results:
+                trang_thai_hien_thi = 'Trong'
+                if r['TrangThaiVatLy'] == 'Bao_Tri':
+                    trang_thai_hien_thi = 'Bao_Tri'
+                elif r['MaDatPhong'] is not None:
+                    trang_thai_hien_thi = 'Dang_O'
+                
+                rooms.append({
+                    "MaPhong": r["MaPhong"],
+                    "TenPhong": r["TenPhong"],
+                    "Tang": r["Tang"],
+                    "TrangThai": trang_thai_hien_thi,
+                    "TrangThaiVatLy": r["TrangThaiVatLy"],
+                    "TenLoai": r["TenLoai"],
+                    "GiaTieuChuan": r["GiaTieuChuan"],
+                    "SucChuaToiDa": r["SucChuaToiDa"],
+                    "TenKhachHang": r["TenKhachHang"] if r["MaDatPhong"] else None,
+                    "NgayCheckIn": r["NgayCheckIn"],
+                    "NgayCheckOut": r["NgayCheckOut"],
+                    "MaDatPhong": r["MaDatPhong"],
+                    "TrangThaiDon": r["TrangThaiDon"]
+                })
+            return rooms
+    except Exception as e:
+        return MOCK_PHONG
+    finally:
+        if conn:
+            conn.close()
+
 def get_pending_bookings():
     conn = get_db_connection()
     

@@ -4,6 +4,13 @@ import time
 import threading
 import pymysql
 from pymysql.cursors import DictCursor
+from datetime import date, timedelta
+
+# Khởi tạo ngày động
+TARGET_DATE = date.today() + timedelta(days=10)
+TARGET_DATE_STR = TARGET_DATE.strftime('%Y-%m-%d')
+NEW_CHECKIN_STR = (TARGET_DATE - timedelta(days=1)).strftime('%Y-%m-%d')
+NEW_CHECKOUT_STR = (TARGET_DATE + timedelta(days=2)).strftime('%Y-%m-%d')
 
 # Thêm thư mục hiện tại vào PYTHONPATH để import được các module của app
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -108,11 +115,11 @@ def run_demo_vulnerable():
         cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
         cursor.execute("START TRANSACTION")
         
-        print_step("Lễ tân (T1)", "Lần 1: Đếm tổng số đơn đặt phòng 'Da_Coc' trong ngày 2026-06-25...", CYAN)
-        cursor.execute("""
+        print_step("Lễ tân (T1)", f"Lần 1: Đếm tổng số đơn đặt phòng 'Da_Coc' trong ngày {TARGET_DATE_STR}...", CYAN)
+        cursor.execute(f"""
             SELECT COUNT(*) AS Total 
             FROM DatPhong 
-            WHERE NgayCheckIn <= '2026-06-25' AND NgayCheckOut >= '2026-06-25' AND TrangThaiDon = 'Da_Coc'
+            WHERE NgayCheckIn <= '{TARGET_DATE_STR}' AND NgayCheckOut >= '{TARGET_DATE_STR}' AND TrangThaiDon = 'Da_Coc'
         """)
         count1 = cursor.fetchone()['Total']
         print_step("Lễ tân (T1)", f"Kết quả lần 1 = {count1} đơn.", CYAN)
@@ -120,11 +127,11 @@ def run_demo_vulnerable():
         event_read_1.set()  # Báo cho Khách C biết đã đọc xong lần 1
         event_insert.wait() # Chờ Khách C insert xong
         
-        print_step("Lễ tân (T1)", "Lần 2: Đếm lại tổng số đơn đặt phòng 'Da_Coc' ngày 2026-06-25...", CYAN)
-        cursor.execute("""
+        print_step("Lễ tân (T1)", f"Lần 2: Đếm lại tổng số đơn đặt phòng 'Da_Coc' ngày {TARGET_DATE_STR}...", CYAN)
+        cursor.execute(f"""
             SELECT COUNT(*) AS Total 
             FROM DatPhong 
-            WHERE NgayCheckIn <= '2026-06-25' AND NgayCheckOut >= '2026-06-25' AND TrangThaiDon = 'Da_Coc'
+            WHERE NgayCheckIn <= '{TARGET_DATE_STR}' AND NgayCheckOut >= '{TARGET_DATE_STR}' AND TrangThaiDon = 'Da_Coc'
         """)
         count2 = cursor.fetchone()['Total']
         print_step("Lễ tân (T1)", f"Kết quả lần 2 = {count2} đơn.", CYAN)
@@ -144,10 +151,10 @@ def run_demo_vulnerable():
         cursor = conn.cursor()
         cursor.execute("START TRANSACTION")
         
-        print_step("Khách C (T2)", "Khách C đặt phòng mới thành công cho ngày 2026-06-25...", MAGENTA)
-        cursor.execute("""
+        print_step("Khách C (T2)", f"Khách C đặt phòng mới thành công cho dải ngày {NEW_CHECKIN_STR} đến {NEW_CHECKOUT_STR}...", MAGENTA)
+        cursor.execute(f"""
             INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon) 
-            VALUES (3, 1, '2026-06-24', '2026-06-27', 200000.00, 'Da_Coc')
+            VALUES (3, 1, '{NEW_CHECKIN_STR}', '{NEW_CHECKOUT_STR}', 200000.00, 'Da_Coc')
         """)
         conn.commit()
         print_step("Khách C (T2)", "Khách C đã COMMIT thành công đơn đặt phòng mới.", MAGENTA)
@@ -177,11 +184,11 @@ def run_demo_solved():
         cursor.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
         cursor.execute("START TRANSACTION")
         
-        print_step("Lễ tân (T1)", "Lần 1: Đếm tổng số đơn đặt phòng 'Da_Coc' trong ngày 2026-06-25...", CYAN)
-        cursor.execute("""
+        print_step("Lễ tân (T1)", f"Lần 1: Đếm tổng số đơn đặt phòng 'Da_Coc' trong ngày {TARGET_DATE_STR}...", CYAN)
+        cursor.execute(f"""
             SELECT COUNT(*) AS Total 
             FROM DatPhong 
-            WHERE NgayCheckIn <= '2026-06-25' AND NgayCheckOut >= '2026-06-25' AND TrangThaiDon = 'Da_Coc'
+            WHERE NgayCheckIn <= '{TARGET_DATE_STR}' AND NgayCheckOut >= '{TARGET_DATE_STR}' AND TrangThaiDon = 'Da_Coc'
         """)
         count1 = cursor.fetchone()['Total']
         print_step("Lễ tân (T1)", f"Kết quả lần 1 = {count1} đơn. (Đã thiết lập Gap Lock)", CYAN)
@@ -191,11 +198,11 @@ def run_demo_solved():
         # Để Khách C có thời gian chạy lệnh insert và bị block
         time.sleep(2)
         
-        print_step("Lễ tân (T1)", "Lần 2: Đếm lại tổng số đơn đặt phòng 'Da_Coc' ngày 2026-06-25...", CYAN)
-        cursor.execute("""
+        print_step("Lễ tân (T1)", f"Lần 2: Đếm lại tổng số đơn đặt phòng 'Da_Coc' ngày {TARGET_DATE_STR}...", CYAN)
+        cursor.execute(f"""
             SELECT COUNT(*) AS Total 
             FROM DatPhong 
-            WHERE NgayCheckIn <= '2026-06-25' AND NgayCheckOut >= '2026-06-25' AND TrangThaiDon = 'Da_Coc'
+            WHERE NgayCheckIn <= '{TARGET_DATE_STR}' AND NgayCheckOut >= '{TARGET_DATE_STR}' AND TrangThaiDon = 'Da_Coc'
         """)
         count2 = cursor.fetchone()['Total']
         print_step("Lễ tân (T1)", f"Kết quả lần 2 = {count2} đơn.", CYAN)
@@ -219,9 +226,9 @@ def run_demo_solved():
         
         start_time = time.time()
         try:
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon) 
-                VALUES (3, 1, '2026-06-24', '2026-06-27', 200000.00, 'Da_Coc')
+                VALUES (3, 1, '{NEW_CHECKIN_STR}', '{NEW_CHECKOUT_STR}', 200000.00, 'Da_Coc')
             """)
             conn.commit()
             wait_time = time.time() - start_time
