@@ -44,10 +44,26 @@
   {% if messages %}
   <div class="flash-container container">
     {% for category, message in messages %}
-    <div class="flash flash--{{ category }}">
-      <span>{{ message }}</span>
-      <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
-    </div>
+    {% if category == 'booking_success' %}
+      <div id="successModal" class="custom-modal-overlay">
+        <div class="custom-modal">
+          <div class="custom-modal-header">
+            <h3>🎉 ĐẶT PHÒNG THÀNH CÔNG</h3>
+          </div>
+          <div class="custom-modal-body">
+            <p>{{ message }}</p>
+          </div>
+          <div class="custom-modal-footer">
+            <button class="btn" style="background-color: #2b7a78; color: white; width: 100%; border: none; padding: 0.75rem; border-radius: 6px; cursor: pointer; font-weight: bold;" onclick="closeSuccessModal()">Đã hiểu</button>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="flash flash--{{ category }}">
+        <span>{{ message }}</span>
+        <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+      </div>
+    {% endif %}
     {% endfor %}
   </div>
   {% endif %}
@@ -85,6 +101,16 @@
   </footer>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    function closeSuccessModal() {
+      const modal = document.getElementById('successModal');
+      if (modal) {
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.2s ease-out';
+        setTimeout(() => modal.remove(), 200);
+      }
+    }
+  </script>
   {% block extra_scripts %}{% endblock %}
 </body>
 

@@ -106,7 +106,7 @@ def booking():
 
         # 2. Gọi service tạo đơn đặt phòng (gọi sp_TaoDatPhong)
         booking_service.tao_dat_phong(ma_kh, ma_phong, ngay_nhan, ngay_tra, tien_coc)
-        flash("Đặt phòng thành công! Nhân viên sẽ liên hệ sớm nhất.", "success")
+        flash(f"Quý khách lưu ý: Hãy check-in tại khách sạn trước 14:00 ngày nhận phòng ({ngay_nhan}) và check-out trước 12:00 ngày trả phòng ({ngay_tra}). Hệ thống sẽ tự động hủy phòng sau 2 tiếng quá hạn check-in (sau 16:00). Phụ thu check-out muộn là 50,000 VNĐ mỗi giờ quá hạn.", "booking_success")
         return redirect(url_for('customer.search'))
         
     except Exception as e:
