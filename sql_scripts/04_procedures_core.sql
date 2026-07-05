@@ -212,6 +212,7 @@ BEGIN
     DECLARE v_MaPhong INT;
     DECLARE v_TrangThaiDon VARCHAR(20);
     DECLARE v_TrangThaiPhong VARCHAR(20);
+    DECLARE v_NgayCheckIn DATE;
 
     START TRANSACTION;
 
@@ -219,7 +220,7 @@ BEGIN
     SET v_MaPhong = NULL;
     SET v_TrangThaiDon = NULL;
     
-    SELECT MaPhong, TrangThaiDon INTO v_MaPhong, v_TrangThaiDon
+    SELECT MaPhong, TrangThaiDon, NgayCheckIn INTO v_MaPhong, v_TrangThaiDon, v_NgayCheckIn
     FROM DatPhong WHERE MaDatPhong = p_MaDatPhong FOR UPDATE;
 
     IF v_MaPhong IS NULL THEN
@@ -227,13 +228,22 @@ BEGIN
         SET MESSAGE_TEXT = 'Don dat phong khong ton tai.', MYSQL_ERRNO = 51003;
     END IF;
 
-    -- 2. Kiểm tra trạng thái đơn hàng hợp lệ
+    -- 2. Kiểm tra tự động hủy nếu quá hạn check-in (quá 2 tiếng sau 14h, tức là quá 16:00:00 ngày check-in)
+    IF v_TrangThaiDon IN ('Cho_Duyet', 'Da_Coc') AND (
+        (CURDATE() > v_NgayCheckIn) OR (CURDATE() = v_NgayCheckIn AND CURTIME() > '16:00:00')
+    ) THEN
+        UPDATE DatPhong SET TrangThaiDon = 'Da_Huy', TienCoc = 0.00 WHERE MaDatPhong = p_MaDatPhong;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Don dat phong da bi tu dong huy do qua gio check-in cho phep (2 tieng).', MYSQL_ERRNO = 52002;
+    END IF;
+
+    -- 3. Kiểm tra trạng thái đơn hàng hợp lệ
     IF v_TrangThaiDon NOT IN ('Cho_Duyet', 'Da_Coc') THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Trang thai don khong cho phep check-in.', MYSQL_ERRNO = 52002;
     END IF;
 
-    -- 3. Khóa dòng và kiểm tra trạng thái vật lý của phòng
+    -- 4. Khóa dòng và kiểm tra trạng thái vật lý của phòng
     SELECT TrangThai INTO v_TrangThaiPhong FROM Phong WHERE MaPhong = v_MaPhong FOR UPDATE;
     
     IF v_TrangThaiPhong <> 'Trong' THEN
@@ -241,7 +251,7 @@ BEGIN
         SET MESSAGE_TEXT = 'Phong dang khong san sang (ban hoac bao tri).', MYSQL_ERRNO = 52003;
     END IF;
 
-    -- 4. Cập nhật đồng thời đơn đặt và trạng thái phòng
+    -- 5. Cập nhật đồng thời đơn đặt và trạng thái phòng
     UPDATE DatPhong SET TrangThaiDon = 'Da_Nhan_Phong' WHERE MaDatPhong = p_MaDatPhong;
     UPDATE Phong SET TrangThai = 'Dang_O' WHERE MaPhong = v_MaPhong;
 
@@ -265,6 +275,9 @@ BEGIN
     DECLARE v_NgayCheckOut DATE;
     DECLARE v_GiaTieuChuan DECIMAL(12, 2);
     DECLARE v_TienPhong DECIMAL(12, 2);
+    DECLARE v_HoursOver INT DEFAULT 0;
+    DECLARE v_SecondsOver INT DEFAULT 0;
+    DECLARE v_PhuPhi DECIMAL(12, 2) DEFAULT 0.00;
 
     START TRANSACTION;
 
@@ -295,14 +308,21 @@ BEGIN
         SET MESSAGE_TEXT = 'Don chua thuc hien Check-in.', MYSQL_ERRNO = 52002;
     END IF;
 
-    -- 4. Gọi Hàm Scalar fn_TinhTienPhong để tính toán tiền phòng thực tế
+    -- 4. Tính toán phụ thu check-out trễ (vượt quá 12:00:00 ngày check-out)
+    SET v_SecondsOver = TIMESTAMPDIFF(SECOND, CAST(CONCAT(v_NgayCheckOut, ' 12:00:00') AS DATETIME), NOW());
+    IF v_SecondsOver > 0 THEN
+        SET v_HoursOver = CEIL(v_SecondsOver / 3600.0);
+        SET v_PhuPhi = v_HoursOver * 50000.00;
+    END IF;
+
+    -- 5. Gọi Hàm Scalar fn_TinhTienPhong để tính toán tiền phòng thực tế
     SET v_TienPhong = fn_TinhTienPhong(v_GiaTieuChuan, v_NgayCheckIn, v_NgayCheckOut);
 
-    -- 5. Tạo hóa đơn tài chính mới
+    -- 6. Tạo hóa đơn tài chính mới (cộng phụ phí trễ vào tiền phòng)
     INSERT INTO HoaDon (MaDatPhong, TienPhong, TienDichVu, TongTien)
-    VALUES (p_MaDatPhong, v_TienPhong, p_TienDichVu, (v_TienPhong + p_TienDichVu));
+    VALUES (p_MaDatPhong, v_TienPhong + v_PhuPhi, p_TienDichVu, (v_TienPhong + v_PhuPhi + p_TienDichVu));
 
-    -- 6. Cập nhật đơn đặt phòng sang Hoàn thành (Sự kiện này kích hoạt trg_CapNhatTrangThaiPhong tự đổi trạng thái phòng sang 'Dang_Don_Dep')
+    -- 7. Cập nhật đơn đặt phòng sang Hoàn thành (Sự kiện này kích hoạt trg_CapNhatTrangThaiPhong tự đổi trạng thái phòng sang 'Dang_Don_Dep')
     UPDATE DatPhong SET TrangThaiDon = 'Hoan_Thanh' WHERE MaDatPhong = p_MaDatPhong;
 
     COMMIT;

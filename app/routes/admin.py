@@ -141,8 +141,8 @@ def checkout():
     try:
         # Trước khi checkout, tính tiền phòng để hiển thị hóa đơn đẹp cho lễ tân
         conn = get_db_connection()
-        tien_phong = 0
-        total_payment = 0
+        tien_phong = 0.0
+        total_payment = 0.0
         customer_name = ""
         room_num = ""
         
@@ -170,7 +170,19 @@ def checkout():
                         )
                         res = cursor.fetchone()
                         if res:
-                            tien_phong = res['TienPhong']
+                            tien_phong = float(res['TienPhong'])
+                            
+                            # Tính toán phụ thu check-out trễ trong route admin (trễ quá 12h ngày check-out)
+                            from datetime import datetime, time as dtime
+                            import math
+                            ngay_checkout_dt = datetime.combine(info['NgayCheckOut'], dtime(12, 0, 0))
+                            now_dt = datetime.now()
+                            phu_phi = 0.0
+                            if now_dt > ngay_checkout_dt:
+                                seconds_over = (now_dt - ngay_checkout_dt).total_seconds()
+                                hours_over = math.ceil(seconds_over / 3600.0)
+                                phu_phi = hours_over * 50000.0
+                            tien_phong += phu_phi
             except Exception as db_err:
                 pass
             finally:
