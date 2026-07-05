@@ -93,6 +93,11 @@ BEGIN
     START TRANSACTION;
 
     -- 1. Kiểm tra ngày Check-in/Check-out hợp lệ
+    IF p_NgayCheckIn <= CURDATE() THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Chi duoc phep dat phong truoc it nhat 1 ngay.', MYSQL_ERRNO = 51004;
+    END IF;
+
     IF p_NgayCheckOut <= p_NgayCheckIn THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Ngay Check-out khong hop le.', MYSQL_ERRNO = 51001;

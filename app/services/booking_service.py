@@ -49,6 +49,22 @@ def kiem_tra_phong_trong(ngay_checkin, ngay_checkout, loai=None, gia_min=None, g
         conn.close()
 
 def tao_dat_phong(ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc):
+    from datetime import datetime, date
+    
+    # Kiểm tra ngày đặt phòng hợp lệ (phải trước ít nhất 1 ngày)
+    try:
+        if isinstance(ngay_checkin, str):
+            checkin_date = datetime.strptime(ngay_checkin, "%Y-%m-%d").date()
+        else:
+            checkin_date = ngay_checkin
+            
+        if checkin_date <= date.today():
+            raise HotelBookingException(51004, "Chỉ được phép đặt phòng trước ít nhất 1 ngày.")
+    except HotelBookingException:
+        raise
+    except Exception:
+        pass
+
     conn = get_db_connection()
     if conn is None:
         # Chế độ Preview giả lập đặt phòng thành công

@@ -218,6 +218,21 @@ def toggle_room():
         
     return redirect(url_for('admin.rooms'))
 
+@admin_bp.route('/admin/update-price', methods=['POST'])
+def update_price():
+    ma_loai_phong = request.form.get('ma_loai_phong')
+    gia_moi = request.form.get('gia_moi')
+    
+    try:
+        admin_service.cap_nhat_gia_loai_phong(ma_loai_phong, gia_moi)
+        flash("Cập nhật giá loại phòng thành công!", "success")
+    except Exception as e:
+        errno = getattr(e, 'errno', None)
+        error_msg = get_error_message(errno, getattr(e, 'message', str(e))) if errno else str(e)
+        flash(f"Lỗi cập nhật giá: {error_msg}", "error")
+        
+    return redirect(url_for('admin.rooms'))
+
 @admin_bp.route('/debug-checkout')
 def debug_checkout():
     conn = get_db_connection()

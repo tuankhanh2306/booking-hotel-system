@@ -334,19 +334,42 @@ def get_all_room_types():
     conn = get_db_connection()
     if conn is None:
         return [
-            {"MaLoaiPhong": 1, "TenLoai": "Standard"},
-            {"MaLoaiPhong": 2, "TenLoai": "Deluxe"},
-            {"MaLoaiPhong": 3, "TenLoai": "Suite"}
+            {"MaLoaiPhong": 1, "TenLoai": "Standard", "GiaTieuChuan": 800000.0},
+            {"MaLoaiPhong": 2, "TenLoai": "Deluxe", "GiaTieuChuan": 1500000.0},
+            {"MaLoaiPhong": 3, "TenLoai": "Suite", "GiaTieuChuan": 3000000.0}
         ]
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT MaLoaiPhong, TenLoai FROM LoaiPhong ORDER BY TenLoai")
+            cursor.execute("SELECT MaLoaiPhong, TenLoai, GiaTieuChuan FROM LoaiPhong ORDER BY TenLoai")
             return cursor.fetchall()
     except Exception as e:
         return []
     finally:
         if conn:
             conn.close()
+
+def cap_nhat_gia_loai_phong(ma_loai_phong, gia_moi):
+    conn = get_db_connection()
+    if conn is None:
+        # Chế độ Preview
+        return True
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "UPDATE LoaiPhong SET GiaTieuChuan = %s WHERE MaLoaiPhong = %s",
+                (gia_moi, ma_loai_phong)
+            )
+            conn.commit()
+            return True
+    except pymysql.MySQLError as e:
+        conn.rollback()
+        errno = e.args[0] if e.args else 50000
+        if isinstance(errno, int) and errno < 0:
+            errno = 65536 + errno
+        msg = e.args[1] if len(e.args) > 1 else str(e)
+        raise HotelBookingException(errno, msg)
+    finally:
+        conn.close()
 
 def them_phong(ten_phong, tang, ma_loai_phong):
     conn = get_db_connection()
