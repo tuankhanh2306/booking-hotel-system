@@ -4,6 +4,13 @@ import time
 import threading
 import pymysql
 from pymysql.cursors import DictCursor
+from datetime import date, timedelta
+
+# Khởi tạo ngày động (Check-in 10 ngày sau, Check-out 13 ngày sau)
+CHECKIN_DATE = date.today() + timedelta(days=10)
+CHECKOUT_DATE = date.today() + timedelta(days=13)
+CHECKIN_STR = CHECKIN_DATE.strftime('%Y-%m-%d')
+CHECKOUT_STR = CHECKOUT_DATE.strftime('%Y-%m-%d')
 
 # Thêm thư mục hiện tại vào PYTHONPATH để import được các module của app
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -108,14 +115,14 @@ def run_demo_vulnerable():
         cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         cursor.execute("START TRANSACTION")
         
-        print_step(client_name, "Bước 1: SELECT kiểm tra phòng 101 (MaPhong=1) từ 2026-07-25 đến 2026-07-28...", color)
+        print_step(client_name, f"Bước 1: SELECT kiểm tra phòng 101 (MaPhong=1) từ {CHECKIN_STR} đến {CHECKOUT_STR}...", color)
         
-        query = """
+        query = f"""
             SELECT COUNT(*) AS ConflictCount 
             FROM DatPhong 
             WHERE MaPhong = 1 
-              AND NgayCheckIn < '2026-07-28' 
-              AND NgayCheckOut > '2026-07-25' 
+              AND NgayCheckIn < '{CHECKOUT_STR}' 
+              AND NgayCheckOut > '{CHECKIN_STR}' 
               AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong')
         """
         cursor.execute(query)
@@ -128,9 +135,9 @@ def run_demo_vulnerable():
         
         print_step(client_name, "Bước 2: Tiến hành chèn (INSERT) đơn đặt phòng...", color)
         try:
-            insert_query = """
+            insert_query = f"""
                 INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon) 
-                VALUES (%s, 1, '2026-07-25', '2026-07-28', 200000.00, 'Da_Coc')
+                VALUES (%s, 1, '{CHECKIN_STR}', '{CHECKOUT_STR}', 200000.00, 'Da_Coc')
             """
             cursor.execute(insert_query, (customer_id,))
             conn.commit()
@@ -182,7 +189,7 @@ def run_demo_solved():
         print_step(client_name, "Bắt đầu gọi sp_TaoDatPhong...", color)
         try:
             # Gọi sp_TaoDatPhong (sử dụng SERIALIZABLE và FOR UPDATE nội bộ)
-            cursor.callproc('sp_TaoDatPhong', (customer_id, 1, '2026-07-25', '2026-07-28', 200000.00))
+            cursor.callproc('sp_TaoDatPhong', (customer_id, 1, CHECKIN_STR, CHECKOUT_STR, 200000.00))
             conn.commit()
             print_step(client_name, f"{GREEN}ĐẶT PHÒNG THÀNH CÔNG!{RESET}", color)
             results.append((client_name, "Thành công"))
