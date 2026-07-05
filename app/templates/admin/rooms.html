@@ -70,7 +70,28 @@
 
   <!-- Bảng trạng thái & Thống kê phòng -->
   <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 2rem;">
-    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--ink);">Tất cả các phòng</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+      <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin: 0; color: var(--ink);">
+        Tất cả các phòng
+        {% if ngay_checkin and ngay_checkout %}
+          <span style="font-size: 0.9rem; font-weight: normal; color: var(--mist);"> (Thống kê từ {{ ngay_checkin }} đến {{ ngay_checkout }})</span>
+        {% endif %}
+      </h3>
+      
+      <!-- Bộ lọc dải ngày kiểm tra trạng thái phòng -->
+      <form action="/admin/rooms" method="get" style="display: flex; align-items: center; gap: 0.75rem; background: #f8fafc; padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); flex-wrap: wrap;">
+        <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink);">📅 Kiểm tra trạng thái theo ngày:</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="date" name="ngay_checkin" value="{{ ngay_checkin or '' }}" required style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem;">
+          <span style="font-size: 0.85rem; color: var(--mist);">đến</span>
+          <input type="date" name="ngay_checkout" value="{{ ngay_checkout or '' }}" required style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 0.35rem 1rem; font-size: 0.85rem; background-color: var(--ocean); border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 600;">Kiểm tra</button>
+        {% if ngay_checkin or ngay_checkout %}
+          <a href="/admin/rooms" style="font-size: 0.85rem; color: #ef4444; text-decoration: none; font-weight: 600; padding: 0.35rem 0.5rem;">Xóa lọc</a>
+        {% endif %}
+      </form>
+    </div>
     
     <div style="overflow-x: auto;">
       <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">

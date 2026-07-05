@@ -7,9 +7,17 @@ admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/admin/rooms')
 def rooms():
-    phong_list = admin_service.get_all_rooms()
+    ngay_checkin = request.args.get('ngay_checkin')
+    ngay_checkout = request.args.get('ngay_checkout')
+    phong_list = admin_service.get_all_rooms_by_date(ngay_checkin, ngay_checkout)
     loai_phong_list = admin_service.get_all_room_types()
-    return render_template('admin/rooms.html', phong_list=phong_list, loai_phong_list=loai_phong_list)
+    return render_template(
+        'admin/rooms.html', 
+        phong_list=phong_list, 
+        loai_phong_list=loai_phong_list,
+        ngay_checkin=ngay_checkin,
+        ngay_checkout=ngay_checkout
+    )
 
 @admin_bp.route('/admin/dashboard')
 def dashboard():
