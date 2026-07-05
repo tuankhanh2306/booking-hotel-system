@@ -78,19 +78,28 @@
         {% endif %}
       </h3>
       
-      <!-- Bộ lọc dải ngày kiểm tra trạng thái phòng -->
-      <form action="/admin/rooms" method="get" style="display: flex; align-items: center; gap: 0.75rem; background: #f8fafc; padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); flex-wrap: wrap;">
-        <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink);">📅 Kiểm tra trạng thái theo ngày:</span>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <input type="date" name="ngay_checkin" value="{{ ngay_checkin or '' }}" required style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem;">
-          <span style="font-size: 0.85rem; color: var(--mist);">đến</span>
-          <input type="date" name="ngay_checkout" value="{{ ngay_checkout or '' }}" required style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem;">
-        </div>
-        <button type="submit" class="btn btn-primary" style="padding: 0.35rem 1rem; font-size: 0.85rem; background-color: var(--ocean); border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 600;">Kiểm tra</button>
-        {% if ngay_checkin or ngay_checkout %}
-          <a href="/admin/rooms" style="font-size: 0.85rem; color: #ef4444; text-decoration: none; font-weight: 600; padding: 0.35rem 0.5rem;">Xóa lọc</a>
-        {% endif %}
-      </form>
+      <!-- Bộ lọc dải ngày kiểm tra trạng thái phòng & Báo cáo đối chiếu -->
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <form action="/admin/rooms" method="get" style="display: flex; align-items: center; gap: 0.75rem; background: #f8fafc; padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); flex-wrap: wrap;">
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink);">📅 Kiểm tra trạng thái:</span>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="date" name="ngay_checkin" value="{{ ngay_checkin or '' }}" required style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem;">
+            <span style="font-size: 0.85rem; color: var(--mist);">đến</span>
+            <input type="date" name="ngay_checkout" value="{{ ngay_checkout or '' }}" required style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="padding: 0.35rem 1rem; font-size: 0.85rem; background-color: var(--ocean); border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 600;">Kiểm tra</button>
+          {% if ngay_checkin or ngay_checkout %}
+            <a href="/admin/rooms" style="font-size: 0.85rem; color: #ef4444; text-decoration: none; font-weight: 600; padding: 0.35rem 0.5rem;">Xóa lọc</a>
+          {% endif %}
+        </form>
+
+        <!-- Form xuất báo cáo ngày (Demo Phantom Read) -->
+        <form action="/admin/report" method="get" target="_blank" style="display: flex; align-items: center; gap: 0.75rem; background: #fffbeb; padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid #fde68a; flex-wrap: wrap;">
+          <span style="font-size: 0.85rem; font-weight: 600; color: #92400e;">🖨️ In báo cáo đối chiếu (Phantom):</span>
+          <input type="date" name="ngay_baocao" required style="padding: 0.25rem 0.5rem; border: 1px solid #fcd34d; border-radius: var(--radius-sm); font-size: 0.85rem;">
+          <button type="submit" class="btn" style="padding: 0.35rem 1rem; font-size: 0.85rem; background-color: #d97706; border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 600;">Tạo báo cáo</button>
+        </form>
+      </div>
     </div>
     
     <div style="overflow-x: auto;">

@@ -117,6 +117,77 @@ def get_all_rooms_by_date(ngay_checkin=None, ngay_checkout=None):
         if conn:
             conn.close()
 
+def get_phantom_report_data(ngay_baocao, use_protection=True):
+    import time
+    conn = get_db_connection()
+    if conn is None:
+        return {
+            "count": 1, 
+            "bookings": [{
+                "MaDatPhong": 999, 
+                "HoTen": "MOCK USER (Demo Mode)", 
+                "TenPhong": "101", 
+                "NgayCheckIn": ngay_baocao, 
+                "NgayCheckOut": ngay_baocao, 
+                "TrangThaiDon": "Da_Coc", 
+                "TienCoc": 200000.0
+            }]
+        }
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Thiết lập mức cô lập giao tác tương ứng
+            if use_protection:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+            else:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+            
+            cursor.execute("START TRANSACTION")
+
+            # 2. Đọc lần 1: Đếm số đơn đã cọc trong ngày báo cáo
+            count_query = """
+                SELECT COUNT(*) AS Total 
+                FROM DatPhong 
+                WHERE NgayCheckIn <= %s AND NgayCheckOut >= %s AND TrangThaiDon = 'Da_Coc'
+            """
+            cursor.execute(count_query, (ngay_baocao, ngay_baocao))
+            count_res = cursor.fetchone()
+            count_val = count_res['Total'] if count_res else 0
+
+            # 3. Sleep 8 giây để mô phỏng thời gian chờ in báo cáo, tạo cơ hội cho khách đặt phòng xen vào
+            time.sleep(8)
+
+            # 4. Đọc lần 2: Lấy danh sách chi tiết các đơn đặt
+            list_query = """
+                SELECT 
+                    dp.MaDatPhong, 
+                    kh.HoTen, 
+                    p.TenPhong, 
+                    dp.NgayCheckIn, 
+                    dp.NgayCheckOut, 
+                    dp.TrangThaiDon, 
+                    dp.TienCoc
+                FROM DatPhong dp
+                JOIN KhachHang kh ON dp.MaKH = kh.MaKH
+                JOIN Phong p ON dp.MaPhong = p.MaPhong
+                WHERE dp.NgayCheckIn <= %s AND dp.NgayCheckOut >= %s AND dp.TrangThaiDon = 'Da_Coc'
+            """
+            cursor.execute(list_query, (ngay_baocao, ngay_baocao))
+            bookings = cursor.fetchall()
+
+            conn.commit()
+            return {
+                "count": count_val,
+                "bookings": bookings
+            }
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if conn:
+            conn.close()
+
 def get_pending_bookings():
     conn = get_db_connection()
     
