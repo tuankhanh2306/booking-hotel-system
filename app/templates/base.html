@@ -15,6 +15,31 @@
 
 <body>
 
+  <!-- ====== PROTECTION TOGGLE BANNER (Feature Toggle cho Demo thuyết trình) ====== -->
+  <div id="protection-banner"
+    style="background: {% if use_protection %}linear-gradient(90deg, #064e3b, #059669){% else %}linear-gradient(90deg, #7f1d1d, #dc2626){% endif %}; color: white; padding: 0.55rem 1.5rem; font-size: 0.82rem; font-weight: 500; display: flex; justify-content: center; align-items: center; gap: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18); position: sticky; top: 0; z-index: 9999;">
+    <span style="display: flex; align-items: center; gap: 0.5rem;">
+      {% if use_protection %}
+      🛡️ <strong>Chế độ Bảo mật: BẬT</strong>
+      <span style="opacity: 0.85; font-weight: 400;">(SERIALIZABLE + FOR UPDATE &mdash; Chống Overbooking &amp; Phantom
+        Read)</span>
+      {% else %}
+      ⚠️ <strong>Chế độ Giả lập: LỖI</strong>
+      <span style="opacity: 0.85; font-weight: 400;">(Chèn thô, không khóa &mdash; Cố tình gây Overbooking &amp; Phantom
+        Read)</span>
+      {% endif %}
+    </span>
+    <form action="/admin/toggle-protection" method="POST" style="margin: 0;">
+      <button type="submit"
+        style="background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.45); color: white; font-weight: 700; padding: 0.28rem 0.9rem; border-radius: 5px; cursor: pointer; font-size: 0.78rem; letter-spacing: 0.06em; transition: background 0.18s, color 0.18s;"
+        onmouseover="this.style.background='white';this.style.color='#1a1a1a';"
+        onmouseout="this.style.background='rgba(255,255,255,0.18)';this.style.color='white';">
+        {% if use_protection %}🔴 BẬT LỖI (Vulnerable){% else %}🟢 SỬA LỖI (Protect){% endif %}
+      </button>
+    </form>
+  </div>
+  <!-- ====================================================================== -->
+
   <header class="site-header">
     <div class="container header-inner">
 
@@ -45,24 +70,26 @@
   <div class="flash-container container">
     {% for category, message in messages %}
     {% if category == 'booking_success' %}
-      <div id="successModal" class="custom-modal-overlay">
-        <div class="custom-modal">
-          <div class="custom-modal-header">
-            <h3>🎉 ĐẶT PHÒNG THÀNH CÔNG</h3>
-          </div>
-          <div class="custom-modal-body">
-            <p>{{ message }}</p>
-          </div>
-          <div class="custom-modal-footer">
-            <button class="btn" style="background-color: #2b7a78; color: white; width: 100%; border: none; padding: 0.75rem; border-radius: 6px; cursor: pointer; font-weight: bold;" onclick="closeSuccessModal()">Đã hiểu</button>
-          </div>
+    <div id="successModal" class="custom-modal-overlay">
+      <div class="custom-modal">
+        <div class="custom-modal-header">
+          <h3>🎉 ĐẶT PHÒNG THÀNH CÔNG</h3>
+        </div>
+        <div class="custom-modal-body">
+          <p>{{ message }}</p>
+        </div>
+        <div class="custom-modal-footer">
+          <button class="btn"
+            style="background-color: #2b7a78; color: white; width: 100%; border: none; padding: 0.75rem; border-radius: 6px; cursor: pointer; font-weight: bold;"
+            onclick="closeSuccessModal()">Đã hiểu</button>
         </div>
       </div>
+    </div>
     {% else %}
-      <div class="flash flash--{{ category }}">
-        <span>{{ message }}</span>
-        <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
-      </div>
+    <div class="flash flash--{{ category }}">
+      <span>{{ message }}</span>
+      <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+    </div>
     {% endif %}
     {% endfor %}
   </div>

@@ -72,11 +72,15 @@
               </span>
             </td>
             <td style="padding: 0.75rem; text-align: right;">
-              <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                {% if booking.NgayCheckInStr == today_str %}
                 <form action="/admin/checkin" method="post" style="display: inline;">
                   <input type="hidden" name="ma_dat_phong" value="{{ booking.MaDatPhong }}">
                   <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.75rem;">🔑 Check-in</button>
                 </form>
+                {% else %}
+                <button type="button" class="btn btn-sm" disabled style="padding: 0.25rem 0.75rem; background: #E5E7EB; color: #9CA3AF; border: 1px solid #D1D5DB; cursor: not-allowed; opacity: 0.7;" title="Chỉ được phép check-in vào đúng ngày {{ booking.NgayCheckInStr }}">🔑 Check-in</button>
+                {% endif %}
                 <form action="/admin/cancel-booking" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đặt phòng #{{ booking.MaDatPhong }} này?');">
                   <input type="hidden" name="ma_dat_phong" value="{{ booking.MaDatPhong }}">
                   <button type="submit" class="btn btn-outline btn-sm" style="color: #991B1B; border-color: #F87171; background: #FEE2E2; padding: 0.25rem 0.75rem; font-size: 0.8rem;">❌ Hủy đơn</button>

@@ -10,3 +10,5 @@ class Config:
     DB_USER = os.environ.get('DB_USER', 'root')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
     DB_NAME = os.environ.get('DB_NAME', 'hotel_booking_db')
+    # Feature Toggle: Bật/tắt cơ chế bảo vệ CSDL (dùng cho demo thuyết trình)
+    USE_PROTECTION = True

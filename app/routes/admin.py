@@ -2,8 +2,23 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.services import admin_service
 from app.error_codes import get_error_message
 from app.database import get_db_connection
+from config import Config
 
 admin_bp = Blueprint('admin', __name__)
+
+@admin_bp.app_context_processor
+def inject_protection_status():
+    """Tiêm biến use_protection vào mọi template HTML tự động."""
+    return dict(use_protection=Config.USE_PROTECTION)
+
+@admin_bp.route('/admin/toggle-protection', methods=['POST'])
+def toggle_protection():
+    """API endpoint đảo ngược trạng thái bảo mật của Config.USE_PROTECTION."""
+    Config.USE_PROTECTION = not Config.USE_PROTECTION
+    status = 'AN TOÀN (Database Protected)' if Config.USE_PROTECTION else 'GIẢ LẬP LỖI (Vulnerable Mode)'
+    flash(f"Đã chuyển sang chế độ: {status}", "info")
+    return redirect(request.referrer or url_for('customer.search'))
+
 
 @admin_bp.route('/admin/rooms')
 def rooms():
@@ -26,8 +41,8 @@ def report():
         flash("Vui lòng chọn ngày báo cáo.", "danger")
         return redirect(url_for('admin.rooms'))
     
-    # Trên nhánh main: use_protection=True để kích hoạt cơ chế bảo vệ SERIALIZABLE
-    use_protection = True
+    # Đọc trạng thái bảo vệ từ Config (có thể đổi động bằng nút Toggle trên web)
+    use_protection = Config.USE_PROTECTION
     
     try:
         report_data = admin_service.get_phantom_report_data(ngay_baocao, use_protection=use_protection)
@@ -63,6 +78,11 @@ def dashboard():
     if conn is not None:
         try:
             with conn.cursor() as cursor:
+                # Nếu ở chế độ lỗi (Vulnerable Mode), hạ mức cô lập xuống READ UNCOMMITTED để thấy hóa đơn tạm chưa commit (Dirty Read)
+                if not Config.USE_PROTECTION:
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
+                    cursor.execute("START TRANSACTION")
+                
                 # Đọc từ View báo cáo doanh thu
                 cursor.execute("SELECT * FROM vw_DoanhThuKhachSan ORDER BY NgayThanhToan DESC")
                 invoices = cursor.fetchall()
@@ -75,6 +95,9 @@ def dashboard():
                     stats["tien_phong"] = float(totals['Phong'] or 0)
                     stats["tien_dich_vu"] = float(totals['DV'] or 0)
                     stats["so_luong"] = int(totals['SL'] or 0)
+                
+                if not Config.USE_PROTECTION:
+                    conn.commit()
         except Exception as e:
             print("Lỗi đọc báo cáo doanh thu:", e)
         finally:
@@ -112,13 +135,47 @@ def add_room():
 
 @admin_bp.route('/admin/checkin', methods=['GET', 'POST'])
 def checkin():
+    from datetime import date
+    today_str = date.today().strftime('%Y-%m-%d')
+
     if request.method == 'GET':
         pending = admin_service.get_pending_bookings()
-        return render_template('admin/checkin.html', pending_bookings=pending)
+        
+        # Format ngày check-in thành string YYYY-MM-DD để dễ dàng so sánh trong template
+        formatted_pending = []
+        for b in pending:
+            b_copy = dict(b)
+            if hasattr(b_copy.get('NgayCheckIn'), 'strftime'):
+                b_copy['NgayCheckInStr'] = b_copy['NgayCheckIn'].strftime('%Y-%m-%d')
+            else:
+                b_copy['NgayCheckInStr'] = str(b_copy.get('NgayCheckIn', ''))
+            formatted_pending.append(b_copy)
+            
+        return render_template('admin/checkin.html', pending_bookings=formatted_pending, today_str=today_str)
     
     # POST
     ma_dat_phong = request.form.get('ma_dat_phong')
     try:
+        # Kiểm tra thời gian thực ở Backend để chặn gửi form giả mạo
+        conn = get_db_connection()
+        if conn is not None:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT NgayCheckIn FROM DatPhong WHERE MaDatPhong = %s", (ma_dat_phong,))
+                    res = cursor.fetchone()
+                    if res:
+                        checkin_date = res['NgayCheckIn']
+                        if hasattr(checkin_date, 'strftime'):
+                            checkin_date_str = checkin_date.strftime('%Y-%m-%d')
+                        else:
+                            checkin_date_str = str(checkin_date)
+                        
+                        if checkin_date_str != today_str:
+                            flash(f"Lỗi Check-in: Chỉ được phép check-in vào đúng ngày nhận phòng ({checkin_date_str}). Hôm nay là {today_str}.", "error")
+                            return redirect(url_for('admin.checkin'))
+            finally:
+                conn.close()
+
         admin_service.checkin(ma_dat_phong)
         flash(f"Check-in thành công cho đơn đặt phòng #{ma_dat_phong}!", "success")
     except Exception as e:
