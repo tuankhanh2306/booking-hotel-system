@@ -65,6 +65,7 @@ def tao_dat_phong(ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc):
     except Exception:
         pass
 
+    from config import Config
     conn = get_db_connection()
     if conn is None:
         # Chế độ Preview giả lập đặt phòng thành công
@@ -72,8 +73,64 @@ def tao_dat_phong(ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc):
 
     try:
         with conn.cursor() as cursor:
-            # Gọi Stored Procedure sp_TaoDatPhong
-            cursor.callproc('sp_TaoDatPhong', (ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc))
+            if Config.USE_PROTECTION:
+                # === AN TOÀN: SERIALIZABLE + SELECT FOR UPDATE + sleep 6s + INSERT ===
+                # (Chống hoàn toàn mọi lỗi đặt trùng phòng dù có thời gian chờ chậm 6 giây nhờ cơ chế khóa SERIALIZABLE + FOR UPDATE)
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+                cursor.execute("START TRANSACTION")
+                
+                # 1. SELECT kiểm tra phòng trống và khóa dải ngày/phòng (FOR UPDATE)
+                cursor.execute("""
+                    SELECT COUNT(*) AS ConflictCount 
+                    FROM DatPhong 
+                    WHERE MaPhong = %s 
+                      AND NgayCheckIn < %s 
+                      AND NgayCheckOut > %s 
+                      AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong')
+                    FOR UPDATE
+                """, (ma_phong, ngay_checkout, ngay_checkin))
+                res = cursor.fetchone()
+                conflict_count = res['ConflictCount'] if res else 0
+                
+                if conflict_count > 0:
+                    raise pymysql.MySQLError(52001, "Phong khong con trong (Overbooking).")
+                
+                # 2. Giả lập trễ 6 giây (nhưng vì có khóa dải lịch, luồng khác chạy song song sẽ bị block chờ)
+                import time
+                time.sleep(6)
+                
+                # 3. Tiến hành chèn an toàn
+                cursor.execute("""
+                    INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon)
+                    VALUES (%s, %s, %s, %s, %s, 'Da_Coc')
+                """, (ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc))
+            else:
+                # === GIẢ LẬP LỖI: Chèn thô trực tiếp (Vulnerable Mode) ===
+                # (REPEATABLE READ mặc định, không khóa, kiểm tra phòng trống nhưng có trễ 6 giây và không dùng khóa nên gây lỗi)
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                cursor.execute("START TRANSACTION")
+                
+                # 1. SELECT kiểm tra phòng trống (đọc dải ngày trùng)
+                cursor.execute("""
+                    SELECT COUNT(*) AS ConflictCount 
+                    FROM DatPhong 
+                    WHERE MaPhong = %s 
+                      AND NgayCheckIn < %s 
+                      AND NgayCheckOut > %s 
+                      AND TrangThaiDon IN ('Cho_Duyet', 'Da_Coc', 'Da_Nhan_Phong')
+                """, (ma_phong, ngay_checkout, ngay_checkin))
+                res = cursor.fetchone()
+                conflict_count = res['ConflictCount'] if res else 0
+                
+                # 2. Giả lập trễ 6 giây để tạo race condition
+                import time
+                time.sleep(6)
+                
+                # 3. Tiến hành chèn thô
+                cursor.execute("""
+                    INSERT INTO DatPhong (MaKH, MaPhong, NgayCheckIn, NgayCheckOut, TienCoc, TrangThaiDon)
+                    VALUES (%s, %s, %s, %s, %s, 'Da_Coc')
+                """, (ma_kh, ma_phong, ngay_checkin, ngay_checkout, tien_coc))
             conn.commit()
             return True
     except pymysql.MySQLError as e:

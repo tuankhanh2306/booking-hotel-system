@@ -313,6 +313,9 @@ def checkin(ma_dat_phong):
         return True
 
     try:
+        # Giả lập thời gian chờ mặc định 6 giây cho giao tác check-in
+        import time
+        time.sleep(6)
         with conn.cursor() as cursor:
             # Gọi Stored Procedure sp_XuLyCheckIn (nội bộ Procedure có check quá 16h và đổi sang Da_Huy)
             cursor.callproc('sp_XuLyCheckIn', (ma_dat_phong,))
@@ -387,14 +390,29 @@ def checkout(ma_dat_phong, tien_dich_vu):
             conn.autocommit(False)
             
             # Gọi các bước của sp_XuLyCheckOut thủ công (không dùng COMMIT bên trong)
-            # Bước 1: Lấy thông tin đơn đặt phòng
-            cursor.execute("""
-                SELECT dp.MaPhong, dp.TrangThaiDon, dp.NgayCheckIn, dp.NgayCheckOut, lp.GiaTieuChuan
-                FROM DatPhong dp
-                JOIN Phong p ON dp.MaPhong = p.MaPhong
-                JOIN LoaiPhong lp ON p.MaLoaiPhong = lp.MaLoaiPhong
-                WHERE dp.MaDatPhong = %s FOR UPDATE
-            """, (ma_dat_phong,))
+            # Bước 1: Lấy thông tin đơn đặt phòng (Sử dụng FOR UPDATE nếu là Safe Mode)
+            from config import Config
+            if Config.USE_PROTECTION:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+                cursor.execute("START TRANSACTION")
+                query = """
+                    SELECT dp.MaPhong, dp.TrangThaiDon, dp.NgayCheckIn, dp.NgayCheckOut, lp.GiaTieuChuan
+                    FROM DatPhong dp
+                    JOIN Phong p ON dp.MaPhong = p.MaPhong
+                    JOIN LoaiPhong lp ON p.MaLoaiPhong = lp.MaLoaiPhong
+                    WHERE dp.MaDatPhong = %s FOR UPDATE
+                """
+            else:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                cursor.execute("START TRANSACTION")
+                query = """
+                    SELECT dp.MaPhong, dp.TrangThaiDon, dp.NgayCheckIn, dp.NgayCheckOut, lp.GiaTieuChuan
+                    FROM DatPhong dp
+                    JOIN Phong p ON dp.MaPhong = p.MaPhong
+                    JOIN LoaiPhong lp ON p.MaLoaiPhong = lp.MaLoaiPhong
+                    WHERE dp.MaDatPhong = %s
+                """
+            cursor.execute(query, (ma_dat_phong,))
             row = cursor.fetchone()
             
             if row is None:
@@ -427,10 +445,10 @@ def checkout(ma_dat_phong, tien_dich_vu):
             # Bước 5: Cập nhật trạng thái đơn (trigger sẽ tự đổi phòng sang Dang_Don_Dep)
             cursor.execute("UPDATE DatPhong SET TrangThaiDon = 'Hoan_Thanh' WHERE MaDatPhong = %s", (ma_dat_phong,))
             
-            # ═══ GIẢ LẬP TRỄ 8 GIÂY (Chờ phản hồi cổng thanh toán ngân hàng) ═══
-            time.sleep(8)
+            # ═══ GIẢ LẬP TRỄ 6 GIÂY (Chờ phản hồi cổng thanh toán ngân hàng) ═══
+            time.sleep(6)
             
-            # COMMIT tất cả sau 8 giây
+            # COMMIT tất cả sau 6 giây
             conn.commit()
             return True
     except pymysql.MySQLError as e:
